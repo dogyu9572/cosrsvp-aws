@@ -16,6 +16,10 @@ yarn-error.log
 /.idea
 /.vscode
 /.history
+/.cursor
+/.cursor-server
+/.config
+/.local
 *.log
 *.cache
 .DS_Store
