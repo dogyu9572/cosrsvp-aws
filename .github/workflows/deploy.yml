@@ -1,0 +1,84 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.PORT }}
+        script: |
+          set -e  # 에러 발생시 스크립트 중단
+          echo "=== GitHub Actions 배포 시작 ==="
+          echo "현재 시간: $(date)"
+          echo "현재 디렉토리: $(pwd)"
+          echo "Git 커밋: $(git log --oneline -1)"
+          
+          cd /home/ubuntu/www/backoffice
+          echo "프로젝트 디렉토리로 이동: $(pwd)"
+          
+          echo "=== Git 상태 확인 ==="
+          git status
+          git log --oneline -3
+          
+          echo "=== 실서버 변경사항 체크 ==="
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "❌ 배포 중단: 실서버에 커밋되지 않은 변경사항 발견!"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "📋 변경된 파일 목록:"
+            git status --short
+            echo ""
+            echo "💡 해결 방법:"
+            echo "  1. 실서버 SSH 접속"
+            echo "  2. cd /home/ubuntu/www/backoffice"
+            echo "  3. git add ."
+            echo "  4. git commit -m '실서버 직접 수정 반영'"
+            echo "  5. git push origin main"
+            echo "  6. GitHub에서 배포 재실행"
+            echo ""
+            exit 1
+          fi
+          echo "✅ 실서버 클린 상태 확인 - 배포 진행"
+          
+          echo "=== Git Pull 실행 ==="
+          git config pull.rebase false
+          git fetch origin
+          git checkout main
+          git reset --hard origin/main
+          echo "현재 커밋: $(git log --oneline -1)"
+          
+          echo "=== Composer 설치 ==="
+          composer install --no-dev --optimize-autoloader
+          
+          echo "=== Laravel 마이그레이션 ==="
+          php artisan migrate --force
+          
+          echo "=== 캐시 최적화 ==="
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          
+          echo "=== 서비스 재시작 ==="
+          php artisan queue:restart
+          sudo systemctl reload nginx 2>/dev/null || echo "⚠️  nginx reload skipped (권한 없음, 수동 재시작 필요)"
+          
+          echo "=== 배포 완료 ==="
+          echo "최종 상태:"
+          git log --oneline -3
+          ls -la
