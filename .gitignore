@@ -1,28 +1,119 @@
+# Laravel 기본
 /node_modules
 /public/hot
 /public/storage
 /storage/*.key
 /vendor
-.env
-.env.backup
-.env.production
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-auth.json
-npm-debug.log
-yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# 환경 설정 파일
+.env
+.env.backup
+.env.production
+.env.local
+.env.*.local
+
+# Laravel 로그 및 캐시
+/storage/*.key
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/framework/cache/*
+!/storage/framework/cache/.gitkeep
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitkeep
+/storage/framework/testing/*
+!/storage/framework/testing/.gitkeep
+/storage/framework/views/*
+!/storage/framework/views/.gitkeep
+
+# PHPUnit
+.phpunit.result.cache
+/phpunit.xml
+
+# Homestead
+Homestead.json
+Homestead.yaml
+auth.json
+
+# NPM/Yarn
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+.npm
+_update-notifier-last-checked
+~/.npm
+
+# 에디터/IDE
 /.history
 /.cursor
 /.cursor-server
 /.config
 /.local
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS 파일
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Shell 히스토리
+.bash_history
+.zsh_history
+.history
+
+# npm 캐시 및 시스템 파일
+.npm/
+_update-notifier-last-checked
+~/.npm/
+*.npm
+
+# 로그 및 캐시 파일
 *.log
 *.cache
-.DS_Store
-Thumbs.db
+*.tmp
+*.temp
 
+# 백업 파일
+*.bak
+*.backup
+*.old
+*.orig
+
+# 압축 파일 (필요시 제외)
+# *.zip
+# *.tar
+# *.tar.gz
+# *.rar
+
+# 임시 디렉토리
 public/temp/
+public/tmp/
+temp/
+tmp/
+docs/
+
+# Docker (필요시 제외)
+# docker-compose.override.yml
+
+# 데이터베이스 덤프
+*.sql
+*.dump
+
+# 업로드 파일 (개발 환경)
+# storage/app/public/uploads/*
+# !storage/app/public/uploads/.gitkeep

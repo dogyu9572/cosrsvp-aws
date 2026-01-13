@@ -17,6 +17,12 @@ use App\Http\Controllers\Backoffice\AdminGroupController;
 use App\Http\Controllers\Backoffice\BannerController;
 use App\Http\Controllers\Backoffice\PopupController;
 use App\Http\Controllers\Backoffice\AccessStatisticsController;
+use App\Http\Controllers\Backoffice\ProjectTermController;
+use App\Http\Controllers\Backoffice\CourseController;
+use App\Http\Controllers\Backoffice\OperatingInstitutionController;
+use App\Http\Controllers\Backoffice\ProjectPeriodController;
+use App\Http\Controllers\Backoffice\CountryController;
+use App\Http\Controllers\Backoffice\ScheduleController;
 
 // =============================================================================
 // 백오피스 인증 라우트
@@ -230,4 +236,70 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
     // 세션 연장
     Route::post('session/extend', [App\Http\Controllers\Backoffice\SessionController::class, 'extend'])
         ->name('backoffice.session.extend');
+
+    // -------------------------------------------------------------------------
+    // 프로젝트 관리
+    // -------------------------------------------------------------------------
+
+    // 프로젝트 기수 관리
+    Route::post('project-terms/update-order', [ProjectTermController::class, 'updateOrder'])
+        ->name('backoffice.project-terms.update-order');
+    Route::resource('project-terms', ProjectTermController::class, [
+        'names' => 'backoffice.project-terms'
+    ])->except(['create']);
+
+    // 과정 관리 (AJAX)
+    Route::post('courses/update-order', [CourseController::class, 'updateOrder'])
+        ->name('backoffice.courses.update-order');
+    Route::get('courses/get-by-term/{termId}', [CourseController::class, 'getByTerm'])
+        ->name('backoffice.courses.get-by-term');
+    Route::get('courses/{course}', [CourseController::class, 'show'])
+        ->name('backoffice.courses.show');
+    Route::resource('courses', CourseController::class, [
+        'names' => 'backoffice.courses'
+    ])->except(['index', 'show', 'create', 'edit']);
+
+    // 운영기관 관리 (AJAX)
+    Route::post('operating-institutions/update-order', [OperatingInstitutionController::class, 'updateOrder'])
+        ->name('backoffice.operating-institutions.update-order');
+    Route::get('operating-institutions/get-by-course/{courseId}', [OperatingInstitutionController::class, 'getByCourse'])
+        ->name('backoffice.operating-institutions.get-by-course');
+    Route::get('operating-institutions/{operatingInstitution}', [OperatingInstitutionController::class, 'show'])
+        ->name('backoffice.operating-institutions.show');
+    Route::resource('operating-institutions', OperatingInstitutionController::class, [
+        'names' => 'backoffice.operating-institutions'
+    ])->except(['index', 'show', 'create', 'edit']);
+
+    // 프로젝트기간 관리 (AJAX)
+    Route::post('project-periods/update-order', [ProjectPeriodController::class, 'updateOrder'])
+        ->name('backoffice.project-periods.update-order');
+    Route::get('project-periods/get-by-institution/{institutionId}', [ProjectPeriodController::class, 'getByInstitution'])
+        ->name('backoffice.project-periods.get-by-institution');
+    Route::get('project-periods/{projectPeriod}', [ProjectPeriodController::class, 'show'])
+        ->name('backoffice.project-periods.show');
+    Route::resource('project-periods', ProjectPeriodController::class, [
+        'names' => 'backoffice.project-periods'
+    ])->except(['index', 'show', 'create', 'edit']);
+
+    // 국가 관리 (AJAX)
+    Route::post('countries/update-order', [CountryController::class, 'updateOrder'])
+        ->name('backoffice.countries.update-order');
+    Route::get('countries/get-by-period/{periodId}', [CountryController::class, 'getByPeriod'])
+        ->name('backoffice.countries.get-by-period');
+    Route::get('countries/{country}', [CountryController::class, 'show'])
+        ->name('backoffice.countries.show');
+    Route::resource('countries', CountryController::class, [
+        'names' => 'backoffice.countries'
+    ])->except(['index', 'show', 'create', 'edit']);
+
+    // 일정 관리 (AJAX)
+    Route::post('schedules/update-order', [ScheduleController::class, 'updateOrder'])
+        ->name('backoffice.schedules.update-order');
+    Route::get('schedules/get-by-country/{countryId}', [ScheduleController::class, 'getByCountry'])
+        ->name('backoffice.schedules.get-by-country');
+    Route::get('schedules/{schedule}', [ScheduleController::class, 'show'])
+        ->name('backoffice.schedules.show');
+    Route::resource('schedules', ScheduleController::class, [
+        'names' => 'backoffice.schedules'
+    ])->except(['index', 'show', 'create', 'edit']);
 });

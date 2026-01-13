@@ -3,6 +3,62 @@
  * 라우팅: /backoffice/boards
  */
 
+/* 프로젝트 기수 관리 페이지 스타일 */
+.selected-item {
+    background-color: #e3f2fd !important;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.selected-item a {
+    font-weight: normal;
+    display: block;
+    width: 100%;
+}
+
+/* 선택되지 않은 항목도 동일한 너비 유지 */
+.course-item,
+.institution-item,
+.period-item,
+.country-item,
+.schedule-item {
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.25rem 0.5rem;
+}
+
+.course-item a,
+.institution-item a,
+.period-item a,
+.country-item a,
+.schedule-item a {
+    display: block;
+    width: 100%;
+}
+
+/* 행 전체 하이라이트 제거 */
+tr.selected-item {
+    background-color: transparent !important;
+}
+
+.register-section {
+    transition: all 0.3s ease;
+}
+
+.order-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.order-controls .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
 /* 템플릿 정보 표시 박스 */
 .board-template-info {
     background: #f8f9fa;
