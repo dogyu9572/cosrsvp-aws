@@ -159,6 +159,12 @@ class BoardPostService
                     : $contentText;
             }
             
+            // schedules 게시판인 경우
+            if ($slug === 'schedules') {
+                // 표출일자 텍스트 (top-notices와 동일)
+                $post->display_date_text = $this->getDisplayDateText($post->custom_fields ?? null);
+            }
+            
             // notices 게시판인 경우
             if ($slug === 'notices') {
                 // 학생 정보 텍스트
@@ -339,7 +345,19 @@ class BoardPostService
         if ($board->custom_fields_config && is_array($board->custom_fields_config)) {
             foreach ($board->custom_fields_config as $fieldConfig) {
                 $fieldName = $fieldConfig['name'];
-                $customFields[$fieldName] = $request->input("custom_field_{$fieldName}");
+                $fieldValue = $request->input("custom_field_{$fieldName}");
+                
+                // display_date_range 타입은 이미 JSON 문자열로 전달되므로 디코드해서 배열로 저장
+                if (isset($fieldConfig['type']) && $fieldConfig['type'] === 'display_date_range') {
+                    if (is_string($fieldValue)) {
+                        $decoded = json_decode($fieldValue, true);
+                        $customFields[$fieldName] = is_array($decoded) ? $decoded : $fieldValue;
+                    } else {
+                        $customFields[$fieldName] = $fieldValue;
+                    }
+                } else {
+                    $customFields[$fieldName] = $fieldValue;
+                }
             }
         }
         
@@ -587,7 +605,7 @@ class BoardPostService
     }
 
     /**
-     * 표출일자 표시 텍스트 생성
+     * 표출일자 표시 텍스트 생성 (top-notices, schedules 공통)
      */
     public function getDisplayDateText(?string $customFieldsJson): string
     {
@@ -596,57 +614,49 @@ class BoardPostService
         }
 
         $customFields = json_decode($customFieldsJson, true);
-        if (!is_array($customFields) || empty($customFields['display_date'])) {
+        if (!is_array($customFields)) {
             return '';
         }
 
-        $displayDateData = is_string($customFields['display_date']) 
-            ? json_decode($customFields['display_date'], true) 
-            : $customFields['display_date'];
-
-        if (!is_array($displayDateData) || empty($displayDateData['use_display_date'])) {
+        // display_date 또는 display_date_range 필드 확인
+        $displayDateField = null;
+        if (!empty($customFields['display_date'])) {
+            $displayDateField = $customFields['display_date'];
+        } elseif (!empty($customFields['display_date_range'])) {
+            $displayDateField = $customFields['display_date_range'];
+        } else {
             return '';
         }
 
+        $displayDateData = is_string($displayDateField) 
+            ? json_decode($displayDateField, true) 
+            : $displayDateField;
+
+        if (!is_array($displayDateData)) {
+            return '';
+        }
+
+        // schedules는 use_display_date 체크 없이 바로 날짜 사용
         $startDate = $displayDateData['start_date'] ?? '';
         $endDate = $displayDateData['end_date'] ?? '';
-
-        if (empty($startDate) && empty($endDate)) {
+        
+        if (empty($startDate) || empty($endDate)) {
             return '';
         }
 
-        if (!empty($startDate) && !empty($endDate)) {
-            try {
-                $start = Carbon::parse($startDate)->format('Y.m.d');
-                $end = Carbon::parse($endDate)->format('Y.m.d');
-                return $start . ' ~ ' . $end;
-            } catch (\Exception $e) {
-                return '';
-            }
+        try {
+            $start = Carbon::parse($startDate)->format('Y.m.d');
+            $end = Carbon::parse($endDate)->format('Y.m.d');
+            return $start . ' - ' . $end;
+        } catch (\Exception $e) {
+            return '';
         }
-
-        if (!empty($startDate)) {
-            try {
-                return Carbon::parse($startDate)->format('Y.m.d');
-            } catch (\Exception $e) {
-                return '';
-            }
-        }
-
-        if (!empty($endDate)) {
-            try {
-                return Carbon::parse($endDate)->format('Y.m.d');
-            } catch (\Exception $e) {
-                return '';
-            }
-        }
-
-        return '';
     }
 
     /**
      * 학생 정보 표시 텍스트 생성
      */
+
     private function getStudentsDisplayText(?string $customFieldsJson): string
     {
         if (empty($customFieldsJson)) {

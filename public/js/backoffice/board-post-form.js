@@ -1106,11 +1106,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const endDateInput = container.querySelector(`#custom_field_${fieldName}_end`);
                 const hiddenInput = container.querySelector(`#custom_field_${fieldName}`);
                 
-                if (checkbox && startDateInput && endDateInput && hiddenInput) {
+                // 체크박스가 있으면 체크박스 상태 사용, 없으면 항상 true
+                if (startDateInput && endDateInput && hiddenInput) {
+                    const useDisplayDate = checkbox ? checkbox.checked : true;
                     const data = {
-                        use_display_date: checkbox.checked,
-                        start_date: startDateInput.value || null,
-                        end_date: endDateInput.value || null
+                        use_display_date: useDisplayDate,
+                        start_date: startDateInput.value || '',
+                        end_date: endDateInput.value || ''
                     };
                     hiddenInput.value = JSON.stringify(data);
                 }
@@ -1130,24 +1132,27 @@ function initDisplayDateRange(container) {
     const endDateInput = container.querySelector(`#custom_field_${fieldName}_end`);
     const hiddenInput = container.querySelector(`#custom_field_${fieldName}`);
     
-    if (!checkbox || !startDateInput || !endDateInput || !hiddenInput) {
+    // 체크박스가 없어도 동작하도록 수정
+    if (!startDateInput || !endDateInput || !hiddenInput) {
         return;
     }
     
-    // 체크박스 변경 시 날짜 필드 활성/비활성화
-    checkbox.addEventListener('change', function() {
-        const isChecked = this.checked;
-        startDateInput.disabled = !isChecked;
-        endDateInput.disabled = !isChecked;
-        
-        if (!isChecked) {
-            // 체크 해제 시 날짜 필드 초기화
-            startDateInput.value = '';
-            endDateInput.value = '';
-        }
-        
-        updateDisplayDateHiddenInput();
-    });
+    // 체크박스가 있으면 체크박스 변경 시 날짜 필드 활성/비활성화
+    if (checkbox) {
+        checkbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            startDateInput.disabled = !isChecked;
+            endDateInput.disabled = !isChecked;
+            
+            if (!isChecked) {
+                // 체크 해제 시 날짜 필드 초기화
+                startDateInput.value = '';
+                endDateInput.value = '';
+            }
+            
+            updateDisplayDateHiddenInput();
+        });
+    }
     
     // 날짜 변경 시 hidden 필드 업데이트
     startDateInput.addEventListener('change', updateDisplayDateHiddenInput);
@@ -1155,10 +1160,11 @@ function initDisplayDateRange(container) {
     
     // hidden 필드 업데이트 함수
     function updateDisplayDateHiddenInput() {
+        const useDisplayDate = checkbox ? checkbox.checked : true;
         const data = {
-            use_display_date: checkbox.checked,
-            start_date: startDateInput.value || null,
-            end_date: endDateInput.value || null
+            use_display_date: useDisplayDate,
+            start_date: startDateInput.value || '',
+            end_date: endDateInput.value || ''
         };
         hiddenInput.value = JSON.stringify(data);
     }

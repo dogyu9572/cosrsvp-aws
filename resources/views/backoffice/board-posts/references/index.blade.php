@@ -132,7 +132,7 @@
                                             @endphp
                                             {{ $postNumber }}
                                         @endif
-                                    </td>                                   
+                                    </td>
                                     <td>
                                         {{ $post->title }}
                                     </td>
