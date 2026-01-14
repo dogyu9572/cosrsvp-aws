@@ -3,6 +3,11 @@
 namespace App\Services\Backoffice;
 
 use App\Models\Board;
+use App\Models\ProjectTerm;
+use App\Models\Course;
+use App\Models\OperatingInstitution;
+use App\Models\ProjectPeriod;
+use App\Models\Country;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -24,7 +29,7 @@ class BoardPostService
     {
         $query = DB::table($this->getTableName($slug));
         
-        $this->applySearchFilters($query, $request);
+        $this->applySearchFilters($query, $request, $slug);
         
         // 목록 개수 설정
         $perPage = $request->get('per_page', 15);
@@ -48,13 +53,15 @@ class BoardPostService
         }
 
         $this->transformDates($posts);
+        $this->transformPostsForList($posts, $slug);
+        
         return $posts;
     }
 
     /**
      * 검색 필터 적용
      */
-    private function applySearchFilters($query, Request $request): void
+    private function applySearchFilters($query, Request $request, string $slug): void
     {
         if ($request->filled('start_date')) {
             $query->whereDate('created_at', '>=', $request->start_date);
@@ -71,6 +78,32 @@ class BoardPostService
         if ($request->filled('keyword')) {
             $this->applyKeywordSearch($query, $request->keyword, $request->search_type);
         }
+        
+        // 프로젝트 기수 필터링 (JSON 필드 - project_term 내부의 값들)
+        $this->applyProjectTermFilter($query, $request, 'filter_project_term_id', 'project_term_id');
+        $this->applyProjectTermFilter($query, $request, 'filter_course_id', 'course_id');
+        $this->applyProjectTermFilter($query, $request, 'filter_operating_institution_id', 'operating_institution_id');
+        $this->applyProjectTermFilter($query, $request, 'filter_project_period_id', 'project_period_id');
+        $this->applyProjectTermFilter($query, $request, 'filter_country_id', 'country_id');
+    }
+
+    /**
+     * 프로젝트 기수 관련 필터 적용 (공통 메서드)
+     */
+    private function applyProjectTermFilter($query, Request $request, string $requestKey, string $jsonKey): void
+    {
+        if (!$request->filled($requestKey)) {
+            return;
+        }
+        
+        $value = $request->get($requestKey);
+        
+        $query->where(function($q) use ($value, $jsonKey) {
+            $q->whereRaw("JSON_EXTRACT(custom_fields, '$.project_term') LIKE ?", ['%"' . $jsonKey . '":' . $value . '%'])
+              ->orWhereRaw("JSON_EXTRACT(JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.project_term')), '$." . $jsonKey . "') = ?", [$value])
+              ->orWhereRaw("custom_fields LIKE ?", ['%"' . $jsonKey . '":' . $value . '%'])
+              ->orWhereRaw("custom_fields LIKE ?", ['%"' . $jsonKey . '":"' . $value . '"%']);
+        });
     }
 
     /**
@@ -101,6 +134,37 @@ class BoardPostService
                     $post->$dateField = Carbon::parse($post->$dateField);
                 }
             }
+            return $post;
+        });
+    }
+
+    /**
+     * 게시글 목록 표시용 데이터 변환 (띠공지 전용)
+     */
+    private function transformPostsForList($posts, string $slug): void
+    {
+        $posts->getCollection()->transform(function ($post) use ($slug) {
+            // 프로젝트 기수 텍스트 (top-notices, notices 공통)
+            $post->project_term_display_text = $this->getProjectTermDisplayText($post->custom_fields ?? null);
+            
+            // top-notices 게시판인 경우
+            if ($slug === 'top-notices') {
+                // 표출일자 텍스트
+                $post->display_date_text = $this->getDisplayDateText($post->custom_fields ?? null);
+                
+                // 내용 미리보기 (HTML 태그 제거, 100자 제한)
+                $contentText = strip_tags($post->content ?? '');
+                $post->content_preview = mb_strlen($contentText) > 100 
+                    ? mb_substr($contentText, 0, 100) . '...' 
+                    : $contentText;
+            }
+            
+            // notices 게시판인 경우
+            if ($slug === 'notices') {
+                // 학생 정보 텍스트
+                $post->students_display_text = $this->getStudentsDisplayText($post->custom_fields ?? null);
+            }
+            
             return $post;
         });
     }
@@ -258,15 +322,27 @@ class BoardPostService
      */
     private function processCustomFields(Request $request, $board): array
     {
-        if (!$board->custom_fields_config || !is_array($board->custom_fields_config)) {
-            return [];
-        }
-
         $customFields = [];
-        foreach ($board->custom_fields_config as $fieldConfig) {
-            $fieldName = $fieldConfig['name'];
-            $customFields[$fieldName] = $request->input("custom_field_{$fieldName}");
+        
+        // notices 게시판인 경우 영문 필드 자동 처리
+        $boardSlug = $board->slug ?? '';
+        if ($boardSlug === 'notices') {
+            if ($request->has('custom_field_title_en')) {
+                $customFields['title_en'] = $request->input('custom_field_title_en');
+            }
+            if ($request->has('custom_field_content_en')) {
+                $customFields['content_en'] = $request->input('custom_field_content_en');
+            }
         }
+        
+        // 기존 커스텀 필드 처리
+        if ($board->custom_fields_config && is_array($board->custom_fields_config)) {
+            foreach ($board->custom_fields_config as $fieldConfig) {
+                $fieldName = $fieldConfig['name'];
+                $customFields[$fieldName] = $request->input("custom_field_{$fieldName}");
+            }
+        }
+        
         return $customFields;
     }
 
@@ -305,11 +381,18 @@ class BoardPostService
         // 기존 게시물 조회
         $existingPost = $this->getPost($slug, $postId);
         
+        if (!$existingPost) {
+            return false;
+        }
+        
         $data = $this->prepareUpdateData($validated, $request, $slug, $board, $existingPost);
         
-        return DB::table($this->getTableName($slug))
+        // update()는 영향받은 행 수를 반환하므로, 게시글이 존재하면 성공으로 처리
+        DB::table($this->getTableName($slug))
             ->where('id', $postId)
             ->update($data);
+        
+        return true;
     }
 
     /**
@@ -329,6 +412,20 @@ class BoardPostService
             $isActive = (bool)$existingPost->is_active;
         }
 
+        // author_name 필드 처리
+        // null이거나 빈 문자열일 경우 기존 값 유지 (수정 시)
+        $authorName = $validated['author_name'] ?? null;
+        if (empty($authorName) && $existingPost && isset($existingPost->author_name)) {
+            $authorName = $existingPost->author_name;
+        }
+
+        // password 필드 처리
+        // 비밀번호가 변경되지 않았을 경우 기존 값 유지 (수정 시)
+        $password = $validated['password'] ?? null;
+        if (empty($password) && $existingPost && isset($existingPost->password)) {
+            $password = $existingPost->password;
+        }
+
         return [
             'title' => $validated['title'],
             'content' => $this->sanitizeContent($validated['content']),
@@ -336,8 +433,8 @@ class BoardPostService
             'is_notice' => $request->has('is_notice'),
             'is_secret' => $request->has('is_secret'),
             'is_active' => $isActive,
-            'author_name' => $validated['author_name'] ?? null,
-            'password' => $validated['password'] ?? null,
+            'author_name' => $authorName,
+            'password' => $password,
             'thumbnail' => $this->handleThumbnail($request, $slug),
             'attachments' => json_encode($this->handleAttachments($request, $slug)),
             'custom_fields' => $this->getCustomFieldsJson($request, $board),
@@ -392,5 +489,203 @@ class BoardPostService
     public function bulkDelete(string $slug, array $postIds): int
     {
         return DB::table($this->getTableName($slug))->whereIn('id', $postIds)->delete();
+    }
+
+    /**
+     * 프로젝트 기수 정보 표시 텍스트 생성
+     */
+    public function getProjectTermDisplayText(?string $customFieldsJson): string
+    {
+        if (!$customFieldsJson) {
+            return '전체';
+        }
+
+        $customFields = json_decode($customFieldsJson, true);
+        if (!is_array($customFields)) {
+            return '전체';
+        }
+
+        // project_term 필드에서 데이터 가져오기 (JSON 문자열일 수 있음)
+        $projectTermData = null;
+        if (isset($customFields['project_term'])) {
+            $projectTermValue = $customFields['project_term'];
+            if (is_string($projectTermValue)) {
+                $projectTermData = json_decode($projectTermValue, true);
+            } elseif (is_array($projectTermValue)) {
+                $projectTermData = $projectTermValue;
+            }
+        }
+
+        // project_term 필드가 없으면 직접 customFields에서 찾기
+        if (!$projectTermData) {
+            $projectTermData = $customFields;
+        }
+
+        if (!is_array($projectTermData)) {
+            return '전체';
+        }
+
+        $parts = [];
+
+        // 기수
+        if (!empty($projectTermData['project_term_id'])) {
+            $term = ProjectTerm::find($projectTermData['project_term_id']);
+            if ($term) {
+                $parts[] = $term->name;
+            }
+        }
+
+        // 과정
+        if (!empty($projectTermData['course_id'])) {
+            $course = Course::find($projectTermData['course_id']);
+            if ($course) {
+                $courseName = $course->name_ko;
+                if ($course->name_en) {
+                    $courseName .= ' / ' . $course->name_en;
+                }
+                $parts[] = $courseName;
+            }
+        }
+
+        // 운영기관
+        if (!empty($projectTermData['operating_institution_id'])) {
+            $institution = OperatingInstitution::find($projectTermData['operating_institution_id']);
+            if ($institution) {
+                $institutionName = $institution->name_ko;
+                if ($institution->name_en) {
+                    $institutionName .= ' / ' . $institution->name_en;
+                }
+                $parts[] = $institutionName;
+            }
+        }
+
+        // 프로젝트기간
+        if (!empty($projectTermData['project_period_id'])) {
+            $period = ProjectPeriod::find($projectTermData['project_period_id']);
+            if ($period) {
+                $periodName = $period->name_ko;
+                if ($period->name_en) {
+                    $periodName .= ' / ' . $period->name_en;
+                }
+                $parts[] = $periodName;
+            }
+        }
+
+        // 국가
+        if (!empty($projectTermData['country_id'])) {
+            $country = Country::find($projectTermData['country_id']);
+            if ($country) {
+                $countryName = $country->name_ko;
+                if ($country->name_en) {
+                    $countryName .= ' / ' . $country->name_en;
+                }
+                $parts[] = $countryName;
+            }
+        }
+
+        return !empty($parts) ? implode(' / ', $parts) : '전체';
+    }
+
+    /**
+     * 표출일자 표시 텍스트 생성
+     */
+    public function getDisplayDateText(?string $customFieldsJson): string
+    {
+        if (!$customFieldsJson) {
+            return '';
+        }
+
+        $customFields = json_decode($customFieldsJson, true);
+        if (!is_array($customFields) || empty($customFields['display_date'])) {
+            return '';
+        }
+
+        $displayDateData = is_string($customFields['display_date']) 
+            ? json_decode($customFields['display_date'], true) 
+            : $customFields['display_date'];
+
+        if (!is_array($displayDateData) || empty($displayDateData['use_display_date'])) {
+            return '';
+        }
+
+        $startDate = $displayDateData['start_date'] ?? '';
+        $endDate = $displayDateData['end_date'] ?? '';
+
+        if (empty($startDate) && empty($endDate)) {
+            return '';
+        }
+
+        if (!empty($startDate) && !empty($endDate)) {
+            try {
+                $start = Carbon::parse($startDate)->format('Y.m.d');
+                $end = Carbon::parse($endDate)->format('Y.m.d');
+                return $start . ' ~ ' . $end;
+            } catch (\Exception $e) {
+                return '';
+            }
+        }
+
+        if (!empty($startDate)) {
+            try {
+                return Carbon::parse($startDate)->format('Y.m.d');
+            } catch (\Exception $e) {
+                return '';
+            }
+        }
+
+        if (!empty($endDate)) {
+            try {
+                return Carbon::parse($endDate)->format('Y.m.d');
+            } catch (\Exception $e) {
+                return '';
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * 학생 정보 표시 텍스트 생성
+     */
+    private function getStudentsDisplayText(?string $customFieldsJson): string
+    {
+        if (empty($customFieldsJson)) {
+            return '전체';
+        }
+
+        $customFields = json_decode($customFieldsJson, true);
+        if (!is_array($customFields) || empty($customFields['students'])) {
+            return '전체';
+        }
+
+        $studentsData = is_string($customFields['students']) 
+            ? json_decode($customFields['students'], true) 
+            : $customFields['students'];
+
+        if (!is_array($studentsData) || empty($studentsData['student_ids'])) {
+            return '전체';
+        }
+
+        $studentIds = $studentsData['student_ids'];
+        if (empty($studentIds) || !is_array($studentIds)) {
+            return '전체';
+        }
+
+        // Student 모델이 있는지 확인하고 학생 이름 가져오기
+        try {
+            if (class_exists(\App\Models\Student::class)) {
+                $studentModel = new \App\Models\Student();
+                $students = $studentModel::whereIn('id', $studentIds)->get();
+                if ($students->isEmpty()) {
+                    return '전체';
+                }
+                return $students->pluck('name')->join(', ');
+            }
+        } catch (\Exception $e) {
+            // Student 모델이 없거나 오류 발생 시 ID만 표시
+        }
+
+        // Student 모델이 없으면 ID만 표시
+        return implode(', ', $studentIds);
     }
 }

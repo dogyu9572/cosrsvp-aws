@@ -1,17 +1,14 @@
 @extends('backoffice.layouts.app')
 
-@section('title', $board->name ?? '게시판')
+@section('title', ($board->name ?? '게시판'))
 
 @section('styles')
-     <link rel="stylesheet" href="{{ asset('css/backoffice/summernote-custom.css') }}">
-    <!-- Summernote CSS (Bootstrap 기반, 완전 무료) -->
-    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
 @endsection
 
 @section('content')
 <div class="board-container">
     <div class="board-header">
-        <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'notice') }}" class="btn btn-secondary btn-sm">
+        <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'top-notices') }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-arrow-left"></i> 목록으로
         </a>
     </div>
@@ -28,16 +25,23 @@
                 </div>
             @endif
 
-            <form action="{{ route('backoffice.board-posts.update', [$board->slug ?? 'notice', $post->id]) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('backoffice.board-posts.store', $board->slug ?? 'top-notices') }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                @method('PUT')
 
                 @if($board->isNoticeEnabled())
                 <div class="board-form-group">
                     <div class="board-checkbox-item">
-                        <input type="checkbox" class="board-checkbox-input" id="is_notice" name="is_notice" value="1" @checked($post->is_notice)>
-                        <label for="is_notice" class="board-form-label">공지 등록</label>
-                    </div>                    
+                        <input type="checkbox" 
+                               class="board-checkbox-input" 
+                               id="is_notice" 
+                               name="is_notice" 
+                               value="1" 
+                               @checked(old('is_notice') == '1')>
+                        <label for="is_notice" class="board-form-label">
+                            <i class="fas fa-bullhorn"></i> 공지글
+                        </label>
+                    </div>
+                    <small class="board-form-text">체크하면 공지글로 설정되어 최상단에 표시됩니다.</small>
                 </div>
                 @endif
 
@@ -45,10 +49,6 @@
                 @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
                     @foreach($board->custom_fields_config as $fieldConfig)
                         @if(in_array($fieldConfig['type'], ['project_term', 'student_select']))
-                            @php
-                                $customFields = $post->custom_fields ? json_decode($post->custom_fields, true) : [];
-                                $fieldValue = $customFields[$fieldConfig['name']] ?? '';
-                            @endphp
                             <div class="board-form-group">
                                 <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
                                     {{ $fieldConfig['label'] }}
@@ -58,14 +58,6 @@
                                 </label>
                                 
                                 @if($fieldConfig['type'] === 'project_term')
-                                    @php
-                                        $projectTermData = is_string($fieldValue) ? json_decode($fieldValue, true) : (is_array($fieldValue) ? $fieldValue : []);
-                                        $selectedTermId = $projectTermData['project_term_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_term');
-                                        $selectedCourseId = $projectTermData['course_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_course');
-                                        $selectedInstitutionId = $projectTermData['operating_institution_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_institution');
-                                        $selectedPeriodId = $projectTermData['project_period_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_period');
-                                        $selectedCountryId = $projectTermData['country_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_country');
-                                    @endphp
                                     <!-- 프로젝트 기수 선택 (5단계 계층 구조) -->
                                     <div class="project-term-selector" data-field-name="{{ $fieldConfig['name'] }}">
                                         <div class="board-form-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -78,7 +70,7 @@
                                                         @if($fieldConfig['required']) required @endif>
                                                     <option value="">전체</option>
                                                     @foreach(\App\Models\ProjectTerm::active()->orderBy('created_at', 'desc')->get() as $term)
-                                                        <option value="{{ $term->id }}" @selected($selectedTermId == $term->id)>
+                                                        <option value="{{ $term->id }}" @selected(old('custom_field_' . $fieldConfig['name'] . '_term') == $term->id)>
                                                             {{ $term->name }}
                                                         </option>
                                                     @endforeach
@@ -90,7 +82,7 @@
                                                         id="custom_field_{{ $fieldConfig['name'] }}_course" 
                                                         name="custom_field_{{ $fieldConfig['name'] }}_course"
                                                         data-level="course"
-                                                        data-selected="{{ $selectedCourseId }}">
+                                                        disabled>
                                                     <option value="">전체</option>
                                                 </select>
                                             </div>
@@ -100,7 +92,7 @@
                                                         id="custom_field_{{ $fieldConfig['name'] }}_institution" 
                                                         name="custom_field_{{ $fieldConfig['name'] }}_institution"
                                                         data-level="institution"
-                                                        data-selected="{{ $selectedInstitutionId }}">
+                                                        disabled>
                                                     <option value="">전체</option>
                                                 </select>
                                             </div>
@@ -110,7 +102,7 @@
                                                         id="custom_field_{{ $fieldConfig['name'] }}_period" 
                                                         name="custom_field_{{ $fieldConfig['name'] }}_period"
                                                         data-level="period"
-                                                        data-selected="{{ $selectedPeriodId }}">
+                                                        disabled>
                                                     <option value="">전체</option>
                                                 </select>
                                             </div>
@@ -120,7 +112,7 @@
                                                         id="custom_field_{{ $fieldConfig['name'] }}_country" 
                                                         name="custom_field_{{ $fieldConfig['name'] }}_country"
                                                         data-level="country"
-                                                        data-selected="{{ $selectedCountryId }}">
+                                                        disabled>
                                                     <option value="">전체</option>
                                                 </select>
                                             </div>
@@ -129,16 +121,9 @@
                                         <input type="hidden" 
                                                id="custom_field_{{ $fieldConfig['name'] }}" 
                                                name="custom_field_{{ $fieldConfig['name'] }}" 
-                                               value="{{ old('custom_field_' . $fieldConfig['name'], $fieldValue) }}">
+                                               value="{{ old('custom_field_' . $fieldConfig['name']) }}">
                                     </div>
                                 @elseif($fieldConfig['type'] === 'student_select')
-                                    @php
-                                        $studentData = is_string($fieldValue) ? json_decode($fieldValue, true) : (is_array($fieldValue) ? $fieldValue : []);
-                                        $selectedStudentIds = $studentData['student_ids'] ?? (is_array($fieldValue) ? $fieldValue : []);
-                                        if (is_string($selectedStudentIds)) {
-                                            $selectedStudentIds = json_decode($selectedStudentIds, true) ?: [];
-                                        }
-                                    @endphp
                                     <!-- 학생 선택 필드 (프로젝트 기수 선택에 따라 동적 로드) -->
                                     <div class="student-selector" data-field-name="{{ $fieldConfig['name'] }}">
                                         <div class="student-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
@@ -153,7 +138,7 @@
                                         <input type="hidden" 
                                                id="custom_field_{{ $fieldConfig['name'] }}" 
                                                name="custom_field_{{ $fieldConfig['name'] }}" 
-                                               value="{{ old('custom_field_' . $fieldConfig['name'], is_array($selectedStudentIds) ? json_encode(['student_ids' => $selectedStudentIds]) : $fieldValue) }}">
+                                               value="{{ old('custom_field_' . $fieldConfig['name']) }}">
                                     </div>
                                 @endif
                             </div>
@@ -172,7 +157,7 @@
                     <select class="board-form-control" id="category" name="category" @if($board->isFieldRequired('category')) required @endif>
                         <option value="">카테고리를 선택하세요</option>
                         @foreach($categoryOptions as $category)
-                            <option value="{{ $category->name }}" @selected(old('category', $post->category) == $category->name)>
+                            <option value="{{ $category->name }}" @selected(old('category') == $category->name)>
                                 {{ $category->name }}
                             </option>
                         @endforeach
@@ -181,15 +166,7 @@
                 @endif
 
                 @if($board->isFieldEnabled('title'))
-                <div class="board-form-group">
-                    <label for="title" class="board-form-label">
-                        제목
-                        @if($board->isFieldRequired('title'))
-                            <span class="required">*</span>
-                        @endif
-                    </label>
-                    <input type="text" class="board-form-control" id="title" name="title" value="{{ $post->title }}" @if($board->isFieldRequired('title')) required @endif>
-                </div>
+                <input type="hidden" id="title" name="title" value="{{ old('title', '띠공지') }}" @if($board->isFieldRequired('title')) required @endif>
                 @endif
 
                 @if($board->isFieldEnabled('content'))
@@ -200,31 +177,77 @@
                             <span class="required">*</span>
                         @endif
                     </label>
-                    <textarea class="board-form-control board-form-textarea" id="content" name="content" rows="15" @if($board->isFieldRequired('content')) required @endif>{{ $post->content }}</textarea>
+                    <input type="text" class="board-form-control" id="content" name="content" value="{{ old('content') }}" style="height: auto; min-height: 38px;" @if($board->isFieldRequired('content')) required @endif>
                 </div>
+                @endif
+
+                <!-- 표출일자 필드 (별도 처리) -->
+                @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
+                    @foreach($board->custom_fields_config as $fieldConfig)
+                        @if($fieldConfig['type'] === 'display_date_range')
+                            @php
+                                $displayDateData = old('custom_field_' . $fieldConfig['name']) ? json_decode(old('custom_field_' . $fieldConfig['name']), true) : ['use_display_date' => false, 'start_date' => '', 'end_date' => ''];
+                                $useDisplayDate = $displayDateData['use_display_date'] ?? false;
+                                $startDate = $displayDateData['start_date'] ?? '';
+                                $endDate = $displayDateData['end_date'] ?? '';
+                            @endphp
+                            <div class="board-form-group display-date-range-selector" data-field-name="{{ $fieldConfig['name'] }}">
+                                <label class="board-form-label">
+                                    {{ $fieldConfig['label'] }}
+                                    @if($fieldConfig['required'])
+                                        <span class="required">*</span>
+                                    @endif
+                                </label>
+                                <div class="board-checkbox-item" style="margin-bottom: 10px; margin-left: 0; padding-left: 0;">
+                                    <input type="checkbox" 
+                                           class="board-checkbox-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_use" 
+                                           name="custom_field_{{ $fieldConfig['name'] }}_use" 
+                                           value="1"
+                                           @checked($useDisplayDate)>
+                                    <label for="custom_field_{{ $fieldConfig['name'] }}_use" class="board-form-label" style="margin-left: 0;">
+                                        표출일자 사용
+                                    </label>
+                                </div>
+                                <div class="date-range-inputs" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; margin-left: 0; padding-left: 0; max-width: 600px;">
+                                    <input type="date" 
+                                           class="board-form-control display-date-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_start" 
+                                           style="flex: 1; max-width: 250px;"
+                                           value="{{ $startDate }}"
+                                           @if(!$useDisplayDate) disabled @endif>
+                                    <span style="margin: 0 5px;">~</span>
+                                    <input type="date" 
+                                           class="board-form-control display-date-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_end" 
+                                           style="flex: 1; max-width: 250px;"
+                                           value="{{ $endDate }}"
+                                           @if(!$useDisplayDate) disabled @endif>
+                                </div>
+                                <small class="board-form-text" style="color: #6c757d;">
+                                    *표출일자를 사용하지 않을시, 상시 표출되는 팝업이 생성됩니다.
+                                </small>
+                                <input type="hidden" 
+                                       id="custom_field_{{ $fieldConfig['name'] }}" 
+                                       name="custom_field_{{ $fieldConfig['name'] }}" 
+                                       value="{{ old('custom_field_' . $fieldConfig['name'], json_encode(['use_display_date' => $useDisplayDate, 'start_date' => $startDate, 'end_date' => $endDate])) }}">
+                            </div>
+                        @endif
+                    @endforeach
                 @endif
 
                 @if($board->enable_sorting)
                 <div class="board-form-group">
                     <label for="sort_order" class="board-form-label">정렬 순서</label>
-                    <input type="number" class="board-form-control" id="sort_order" name="sort_order" value="{{ old('sort_order', $post->sort_order ?? 0) }}" min="0">
-                    <small class="board-form-text">숫자가 작을수록 위에 표시됩니다. (0이면 자동 정렬)</small>
+                    <input type="number" class="board-form-control" id="sort_order" name="sort_order" value="{{ old('sort_order', $nextSortOrder ?? 0) }}" min="0">
+                    <small class="board-form-text">숫자가 클수록 위에 표시됩니다.</small>
                 </div>
                 @endif
 
-                <!-- 커스텀 필드 입력 폼 (프로젝트 기수, 학생 선택 제외) -->
+                <!-- 커스텀 필드 입력 폼 (프로젝트 기수, 학생 선택, 표출일자 제외) -->
                 @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
                     @foreach($board->custom_fields_config as $fieldConfig)
-                        @if(!in_array($fieldConfig['type'], ['project_term', 'student_select']))
-                            @php
-                                $customFields = $post->custom_fields ? json_decode($post->custom_fields, true) : [];
-                                $fieldValue = $customFields[$fieldConfig['name']] ?? '';
-                                
-                                // 체크박스와 라디오 버튼의 경우 배열로 처리
-                                if (in_array($fieldConfig['type'], ['checkbox', 'radio']) && $fieldValue && !is_array($fieldValue)) {
-                                    $fieldValue = [$fieldValue];
-                                }
-                            @endphp
+                        @if(!in_array($fieldConfig['type'], ['project_term', 'student_select', 'display_date_range']))
                             <div class="board-form-group">
                                 <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
                                     {{ $fieldConfig['label'] }}
@@ -238,60 +261,53 @@
                                        class="board-form-control" 
                                        id="custom_field_{{ $fieldConfig['name'] }}" 
                                        name="custom_field_{{ $fieldConfig['name'] }}" 
-                                       value="{{ old('custom_field_' . $fieldConfig['name'], $fieldValue) }}"
+                                       value="{{ old('custom_field_' . $fieldConfig['name']) }}"
                                        placeholder="{{ $fieldConfig['placeholder'] ?? '' }}"
                                        @if($fieldConfig['required']) required @endif>
                             @elseif($fieldConfig['type'] === 'select')
-                                <select class="board-form-control" 
-                                        id="custom_field_{{ $fieldConfig['name'] }}" 
-                                        name="custom_field_{{ $fieldConfig['name'] }}"
-                                        @if($fieldConfig['required']) required @endif>
-                                    <option value="">선택하세요</option>
-                                    @if($fieldConfig['options'])
+                                @if($fieldConfig['options'])
+                                    <select class="board-form-control" 
+                                            id="custom_field_{{ $fieldConfig['name'] }}" 
+                                            name="custom_field_{{ $fieldConfig['name'] }}"
+                                            @if($fieldConfig['required']) required @endif>
+                                        <option value="">선택하세요</option>
                                         @foreach(explode(",", $fieldConfig['options']) as $option)
                                             @php $option = trim($option); @endphp
                                             @if(!empty($option))
-                                                <option value="{{ $option }}" @selected(old('custom_field_' . $fieldConfig['name'], $fieldValue) == $option)>
+                                                <option value="{{ $option }}" @selected(old('custom_field_' . $fieldConfig['name']) == $option)>
                                                     {{ $option }}
                                                 </option>
                                             @endif
                                         @endforeach
-                                    @endif
-                                </select>
+                                    </select>
+                                @else
+                                    <div class="board-form-text text-muted">셀렉박스는 선택 옵션이 필요합니다.</div>
+                                @endif
                             @elseif($fieldConfig['type'] === 'checkbox')
                                 @if($fieldConfig['options'])
                                     <div class="board-options-list board-options-horizontal">
                                         @foreach(explode(",", $fieldConfig['options']) as $option)
                                             @php $option = trim($option); @endphp
                                             @if(!empty($option))
-                                                @php
-                                                    $isChecked = is_array($fieldValue) ? in_array($option, $fieldValue) : $fieldValue == $option;
-                                                    $isOldChecked = is_array(old('custom_field_' . $fieldConfig['name'])) ? in_array($option, old('custom_field_' . $fieldConfig['name'])) : old('custom_field_' . $fieldConfig['name']) == $option;
-                                                @endphp
                                                 <div class="board-option-item">
                                                     <input type="checkbox" 
                                                            id="option_{{ $fieldConfig['name'] }}_{{ $loop->index }}" 
                                                            name="custom_field_{{ $fieldConfig['name'] }}[]" 
                                                            value="{{ $option }}"
-                                                           @checked($isChecked || $isOldChecked)>
+                                                           {{ in_array($option, old('custom_field_' . $fieldConfig['name'], [])) ? 'checked' : '' }}>
                                                     <label for="option_{{ $fieldConfig['name'] }}_{{ $loop->index }}">{{ $option }}</label>
                                                 </div>
                                             @endif
                                         @endforeach
                                     </div>
                                 @else
-                                    @php
-                                        $isChecked = is_array($fieldValue) ? in_array('1', $fieldValue) : $fieldValue == '1' || $fieldValue == 1;
-                                        $isOldChecked = is_array(old('custom_field_' . $fieldConfig['name'])) ? in_array('1', old('custom_field_' . $fieldConfig['name'])) : old('custom_field_' . $fieldConfig['name']) == '1';
-                                    @endphp
                                     <div class="board-checkbox-item">
                                         <input type="checkbox" 
                                                class="board-checkbox-input" 
                                                id="custom_field_{{ $fieldConfig['name'] }}" 
                                                name="custom_field_{{ $fieldConfig['name'] }}" 
                                                value="1"
-                                               @checked($isChecked || $isOldChecked)
-                                               @if($fieldConfig['required']) required @endif>
+                                               {{ old('custom_field_' . $fieldConfig['name']) == '1' ? 'checked' : '' }}>
                                         <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
                                             {{ $fieldConfig['label'] }}
                                         </label>
@@ -303,16 +319,12 @@
                                         @foreach(explode(",", $fieldConfig['options']) as $option)
                                             @php $option = trim($option); @endphp
                                             @if(!empty($option))
-                                                @php
-                                                    $isChecked = is_array($fieldValue) ? in_array($option, $fieldValue) : $fieldValue == $option;
-                                                    $isOldChecked = is_array(old('custom_field_' . $fieldConfig['name'])) ? in_array($option, old('custom_field_' . $fieldConfig['name'])) : old('custom_field_' . $fieldConfig['name']) == $option;
-                                                @endphp
                                                 <div class="board-option-item">
                                                     <input type="radio" 
                                                            id="option_{{ $fieldConfig['name'] }}_{{ $loop->index }}" 
                                                            name="custom_field_{{ $fieldConfig['name'] }}" 
                                                            value="{{ $option }}"
-                                                           @checked($isChecked || $isOldChecked)
+                                                           @checked(old('custom_field_' . $fieldConfig['name']) == $option)
                                                            @if($fieldConfig['required']) required @endif>
                                                     <label for="option_{{ $fieldConfig['name'] }}_{{ $loop->index }}">{{ $option }}</label>
                                                 </div>
@@ -327,20 +339,24 @@
                                        class="board-form-control" 
                                        id="custom_field_{{ $fieldConfig['name'] }}" 
                                        name="custom_field_{{ $fieldConfig['name'] }}" 
-                                       value="{{ old('custom_field_' . $fieldConfig['name'], $fieldValue) }}"
+                                       value="{{ old('custom_field_' . $fieldConfig['name']) }}"
                                        @if($fieldConfig['required']) required @endif>
                             @elseif($fieldConfig['type'] === 'editor')
                                 <textarea class="board-form-control board-form-textarea summernote-editor" 
                                           id="custom_field_{{ $fieldConfig['name'] }}" 
                                           name="custom_field_{{ $fieldConfig['name'] }}" 
                                           rows="10"
-                                          @if($fieldConfig['required']) required @endif>{{ old('custom_field_' . $fieldConfig['name'], $fieldValue) }}</textarea>
+                                          @if($fieldConfig['required']) required @endif>{{ old('custom_field_' . $fieldConfig['name']) }}</textarea>
                             @endif
                             
+                            @if($fieldConfig['max_length'] && in_array($fieldConfig['type'], ['text']))
+                                <small class="board-form-text">최대 {{ $fieldConfig['max_length'] }}자 (영어 기준)까지 입력 가능합니다.</small>
+                            @endif
                         </div>
                         @endif
                     @endforeach
                 @endif
+                
 
                 @if($board->isFieldEnabled('author_name'))
                 <div class="board-form-group">
@@ -350,7 +366,7 @@
                             <span class="required">*</span>
                         @endif
                     </label>
-                    <input type="text" class="board-form-control" id="author_name" name="author_name" value="{{ old('author_name', $post->author_name) }}" @if($board->isFieldRequired('author_name')) required @endif>
+                    <input type="text" class="board-form-control" id="author_name" name="author_name" value="{{ old('author_name') }}" @if($board->isFieldRequired('author_name')) required @endif>
                 </div>
                 @endif
 
@@ -362,8 +378,8 @@
                             <span class="required">*</span>
                         @endif
                     </label>
-                    <input type="password" class="board-form-control" id="password" name="password">
-                    <small class="board-form-text">비밀번호를 변경하려면 새 비밀번호를 입력하세요. 변경하지 않으려면 비워두세요.</small>
+                    <input type="password" class="board-form-control" id="password" name="password" @if($board->isFieldRequired('password')) required @endif>
+                    <small class="board-form-text">게시글 수정/삭제 시 사용할 비밀번호를 입력하세요.</small>
                 </div>
                 @endif
 
@@ -375,7 +391,7 @@
                                id="is_secret" 
                                name="is_secret" 
                                value="1" 
-                               @checked(old('is_secret', $post->is_secret))>
+                               @checked(old('is_secret') == '1')>
                         <label for="is_secret" class="board-form-label">
                             <i class="fas fa-lock"></i> 비밀글
                         </label>
@@ -383,31 +399,6 @@
                     <small class="board-form-text">체크하면 본인만 조회할 수 있습니다.</small>
                 </div>
                 @endif
-
-                <div class="board-form-group">
-                    <label for="thumbnail" class="board-form-label">썸네일 이미지</label>
-                    <div class="board-file-upload">
-                        <div class="board-file-input-wrapper">
-                            <input type="file" class="board-file-input" id="thumbnail" name="thumbnail" accept=".jpg,.jpeg,.png,.gif">
-                            <div class="board-file-input-content">
-                                <i class="fas fa-image"></i>
-                                <span class="board-file-input-text">썸네일 이미지를 선택하거나 여기로 드래그하세요</span>
-                                <span class="board-file-input-subtext">JPG, PNG, GIF 파일만 가능 (최대 5MB)</span>
-                            </div>
-                        </div>
-                        @if($post->thumbnail)
-                            <input type="hidden" name="existing_thumbnail" value="{{ $post->thumbnail }}">
-                            <div class="board-file-preview" id="thumbnailPreview">
-                                <img src="{{ asset('storage/' . $post->thumbnail) }}" alt="현재 썸네일" class="thumbnail-preview">
-                                <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="removeThumbnail()">
-                                    <i class="fas fa-trash"></i> 썸네일 제거
-                                </button>
-                            </div>
-                        @else
-                            <div class="board-file-preview" id="thumbnailPreview"></div>
-                        @endif
-                    </div>
-                </div>
 
                 @if($board->isFieldEnabled('attachments'))
                 <div class="board-form-group">
@@ -426,41 +417,17 @@
                                 <span class="board-file-input-subtext">최대 5개, 각 파일 10MB 이하</span>
                             </div>
                         </div>
-                        
-                        @if($post->attachments)
-                            @php
-                                $existingAttachments = json_decode($post->attachments, true);
-                            @endphp
-                            @if($existingAttachments && is_array($existingAttachments) && count($existingAttachments) > 0)
-                                <div class="board-existing-files">
-                                    <div class="board-attachment-list">
-                                        @foreach($existingAttachments as $index => $attachment)
-                                            <div class="board-attachment-item existing-file" data-index="{{ $index }}">
-                                                <i class="fas fa-file"></i>
-                                                <span class="board-attachment-name">{{ $attachment['name'] }}</span>
-                                                <span class="board-attachment-size">({{ number_format($attachment['size'] / 1024 / 1024, 2) }}MB)</span>
-                                                <button type="button" class="board-attachment-remove" onclick="removeExistingFile({{ $index }})">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                                <input type="hidden" name="existing_attachments[]" value="{{ json_encode($attachment) }}">
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
-                        @endif
-                        
                         <div class="board-file-preview" id="filePreview"></div>
                     </div>
                 </div>
                 @endif
 
-                <div class="board-form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> 저장
-                    </button>
-                    <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'notice') }}" class="btn btn-secondary">취소</a>
-                </div>
+            <div class="board-form-actions">
+                <button type="submit" class="btn btn-primary" data-skip-button="true">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+                <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'top-notices') }}" class="btn btn-secondary">취소</a>
+            </div>
             </form>
         </div>
     </div>
@@ -468,9 +435,153 @@
 @endsection
 
 @section('scripts')
-    <!-- jQuery, Bootstrap, Summernote JS (순서 중요!) -->
+    <!-- jQuery, Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
+    
+    <!-- initSummernote 오버라이드: board-post-form.js 로드 전에 실행 -->
+    <script>
+        // initSummernote 함수를 미리 정의하여 오버라이드 준비
+        // board-post-form.js가 로드되면 즉시 오버라이드
+        (function() {
+            // DOMContentLoaded 이벤트를 capture phase에서 먼저 등록
+            document.addEventListener('DOMContentLoaded', function(e) {
+                if (typeof window.initSummernote === 'function') {
+                    const originalInitSummernote = window.initSummernote;
+                    window.initSummernote = function() {
+                        try {
+                            const contentElement = $('#content');
+                            if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                                // input 타입이면 에디터 초기화하지 않고 바로 리턴
+                                console.log('[DEBUG] initSummernote: #content가 input이므로 초기화 건너뜀');
+                                return;
+                            }
+                            return originalInitSummernote.apply(this, arguments);
+                        } catch (error) {
+                            console.error('[DEBUG] initSummernote 오류:', error);
+                            // 오류 발생 시에도 계속 진행
+                            return;
+                        }
+                    };
+                    console.log('[DEBUG] initSummernote 오버라이드 완료 (DOMContentLoaded)');
+                }
+            }, true); // capture phase에서 실행
+            
+            // board-post-form.js 로드 직후 오버라이드 시도
+            function overrideInitSummernote() {
+                if (typeof window.initSummernote === 'function') {
+                    const originalInitSummernote = window.initSummernote;
+                    window.initSummernote = function() {
+                        try {
+                            const contentElement = $('#content');
+                            if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                                console.log('[DEBUG] initSummernote: #content가 input이므로 초기화 건너뜀');
+                                return;
+                            }
+                            return originalInitSummernote.apply(this, arguments);
+                        } catch (error) {
+                            console.error('[DEBUG] initSummernote 오류:', error);
+                            return;
+                        }
+                    };
+                    console.log('[DEBUG] initSummernote 오버라이드 완료 (로드 직후)');
+                    return true;
+                }
+                return false;
+            }
+            
+            // 즉시 시도
+            if (overrideInitSummernote()) {
+                return;
+            }
+            
+            // 주기적으로 체크 (최대 5초)
+            let checkCount = 0;
+            const maxChecks = 50;
+            const interval = setInterval(function() {
+                checkCount++;
+                if (overrideInitSummernote() || checkCount >= maxChecks) {
+                    clearInterval(interval);
+                }
+            }, 100);
+        })();
+    </script>
+    
     <script src="{{ asset('js/backoffice/board-post-form.js') }}"></script>
+    <script>
+        // board-post-form.js 로드 직후 즉시 오버라이드
+        (function() {
+            function overrideInitSummernote() {
+                if (typeof window.initSummernote === 'function') {
+                    const originalInitSummernote = window.initSummernote;
+                    window.initSummernote = function() {
+                        try {
+                            const contentElement = $('#content');
+                            if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                                console.log('[DEBUG] initSummernote: #content가 input이므로 초기화 건너뜀');
+                                return;
+                            }
+                            return originalInitSummernote.apply(this, arguments);
+                        } catch (error) {
+                            console.error('[DEBUG] initSummernote 오류:', error);
+                            return;
+                        }
+                    };
+                    console.log('[DEBUG] initSummernote 오버라이드 완료 (스크립트 로드 직후)');
+                    return true;
+                }
+                return false;
+            }
+            
+            // 즉시 시도
+            overrideInitSummernote();
+            
+            // DOMContentLoaded 후에도 한 번 더 시도
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', overrideInitSummernote);
+            } else {
+                overrideInitSummernote();
+            }
+        })();
+    </script>
+    <script>
+        // 띠공지 게시판: #content 에디터 초기화 방지 및 스타일 제거
+        $(document).ready(function() {
+            // initSummernote 함수가 호출되기 전에 #content를 input으로 감지하도록 처리
+            const originalInitSummernote = window.initSummernote;
+            if (typeof originalInitSummernote === 'function') {
+                window.initSummernote = function() {
+                    const contentElement = $('#content');
+                    if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                        // input 타입이면 에디터 초기화하지 않고 바로 리턴
+                        return;
+                    }
+                    return originalInitSummernote.apply(this, arguments);
+                };
+            }
+            
+            // #content에 적용된 높이 스타일 제거 (인라인 스타일 포함)
+            const contentElement = $('#content');
+            if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                contentElement.removeAttr('style').css({
+                    'height': 'auto',
+                    'min-height': '38px',
+                    'resize': 'none'
+                });
+            }
+            
+            // 나중에 실행될 수 있는 스타일 적용도 방지
+            setTimeout(function() {
+                const contentEl = $('#content');
+                if (contentEl.length && contentEl.prop('tagName') === 'INPUT') {
+                    contentEl.removeAttr('style').css({
+                        'height': 'auto',
+                        'min-height': '38px',
+                        'resize': 'none'
+                    });
+                }
+            }, 100);
+            
+        });
+    </script>
 @endsection

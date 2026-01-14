@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Backoffice;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BoardPostRequest;
 use App\Services\Backoffice\BoardPostService;
+use App\Services\Backoffice\MemberService;
 use App\Models\Board;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,10 +13,12 @@ use Illuminate\Support\Facades\DB;
 class BoardPostController extends Controller
 {
     protected $boardPostService;
+    protected $memberService;
 
-    public function __construct(BoardPostService $boardPostService)
+    public function __construct(BoardPostService $boardPostService, MemberService $memberService)
     {
         $this->boardPostService = $boardPostService;
+        $this->memberService = $memberService;
     }
 
     /**
@@ -37,6 +40,11 @@ class BoardPostController extends Controller
             
             // 게시글이 없으면 생성 페이지로 리다이렉트
             return redirect()->route('backoffice.board-posts.create', $slug);
+        }
+        
+        // 띠공지 게시판인 경우 내용 검색으로 강제 설정
+        if ($slug === 'top-notices' && $request->filled('keyword') && !$request->filled('search_type')) {
+            $request->merge(['search_type' => 'content']);
         }
         
         $posts = $this->boardPostService->getPosts($slug, $request);

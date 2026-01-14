@@ -3,15 +3,12 @@
 @section('title', $board->name ?? '게시판')
 
 @section('styles')
-     <link rel="stylesheet" href="{{ asset('css/backoffice/summernote-custom.css') }}">
-    <!-- Summernote CSS (Bootstrap 기반, 완전 무료) -->
-    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
 @endsection
 
 @section('content')
 <div class="board-container">
     <div class="board-header">
-        <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'notice') }}" class="btn btn-secondary btn-sm">
+        <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'top-notices') }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-arrow-left"></i> 목록으로
         </a>
     </div>
@@ -28,7 +25,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('backoffice.board-posts.update', [$board->slug ?? 'notice', $post->id]) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('backoffice.board-posts.update', [$board->slug ?? 'top-notices', $post->id]) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -181,15 +178,7 @@
                 @endif
 
                 @if($board->isFieldEnabled('title'))
-                <div class="board-form-group">
-                    <label for="title" class="board-form-label">
-                        제목
-                        @if($board->isFieldRequired('title'))
-                            <span class="required">*</span>
-                        @endif
-                    </label>
-                    <input type="text" class="board-form-control" id="title" name="title" value="{{ $post->title }}" @if($board->isFieldRequired('title')) required @endif>
-                </div>
+                <input type="hidden" id="title" name="title" value="{{ old('title', $post->title ?? '띠공지') }}" @if($board->isFieldRequired('title')) required @endif>
                 @endif
 
                 @if($board->isFieldEnabled('content'))
@@ -200,7 +189,7 @@
                             <span class="required">*</span>
                         @endif
                     </label>
-                    <textarea class="board-form-control board-form-textarea" id="content" name="content" rows="15" @if($board->isFieldRequired('content')) required @endif>{{ $post->content }}</textarea>
+                    <input type="text" class="board-form-control" id="content" name="content" value="{{ old('content', $post->content) }}" style="height: auto; min-height: 38px;" @if($board->isFieldRequired('content')) required @endif>
                 </div>
                 @endif
 
@@ -212,10 +201,73 @@
                 </div>
                 @endif
 
-                <!-- 커스텀 필드 입력 폼 (프로젝트 기수, 학생 선택 제외) -->
+                <!-- 표출일자 필드 (별도 처리) -->
                 @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
                     @foreach($board->custom_fields_config as $fieldConfig)
-                        @if(!in_array($fieldConfig['type'], ['project_term', 'student_select']))
+                        @if($fieldConfig['type'] === 'display_date_range')
+                            @php
+                                $customFields = $post->custom_fields ? json_decode($post->custom_fields, true) : [];
+                                $fieldValue = $customFields[$fieldConfig['name']] ?? '';
+                                $displayDateData = is_string($fieldValue) ? json_decode($fieldValue, true) : (is_array($fieldValue) ? $fieldValue : []);
+                                if (old('custom_field_' . $fieldConfig['name'])) {
+                                    $oldData = json_decode(old('custom_field_' . $fieldConfig['name']), true);
+                                    if ($oldData) {
+                                        $displayDateData = $oldData;
+                                    }
+                                }
+                                $useDisplayDate = $displayDateData['use_display_date'] ?? false;
+                                $startDate = $displayDateData['start_date'] ?? '';
+                                $endDate = $displayDateData['end_date'] ?? '';
+                            @endphp
+                            <div class="board-form-group display-date-range-selector" data-field-name="{{ $fieldConfig['name'] }}">
+                                <label class="board-form-label">
+                                    {{ $fieldConfig['label'] }}
+                                    @if($fieldConfig['required'])
+                                        <span class="required">*</span>
+                                    @endif
+                                </label>
+                                <div class="board-checkbox-item" style="margin-bottom: 10px; margin-left: 0; padding-left: 0;">
+                                    <input type="checkbox" 
+                                           class="board-checkbox-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_use" 
+                                           name="custom_field_{{ $fieldConfig['name'] }}_use" 
+                                           value="1"
+                                           @checked($useDisplayDate)>
+                                    <label for="custom_field_{{ $fieldConfig['name'] }}_use" class="board-form-label" style="margin-left: 0;">
+                                        표출일자 사용
+                                    </label>
+                                </div>
+                                <div class="date-range-inputs" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; margin-left: 0; padding-left: 0; max-width: 600px;">
+                                    <input type="date" 
+                                           class="board-form-control display-date-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_start" 
+                                           style="flex: 1; max-width: 250px;"
+                                           value="{{ $startDate }}"
+                                           @if(!$useDisplayDate) disabled @endif>
+                                    <span style="margin: 0 5px;">~</span>
+                                    <input type="date" 
+                                           class="board-form-control display-date-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_end" 
+                                           style="flex: 1; max-width: 250px;"
+                                           value="{{ $endDate }}"
+                                           @if(!$useDisplayDate) disabled @endif>
+                                </div>
+                                <small class="board-form-text" style="color: #6c757d;">
+                                    *표출일자를 사용하지 않을시, 상시 표출되는 팝업이 생성됩니다.
+                                </small>
+                                <input type="hidden" 
+                                       id="custom_field_{{ $fieldConfig['name'] }}" 
+                                       name="custom_field_{{ $fieldConfig['name'] }}" 
+                                       value="{{ old('custom_field_' . $fieldConfig['name'], json_encode(['use_display_date' => $useDisplayDate, 'start_date' => $startDate, 'end_date' => $endDate])) }}">
+                            </div>
+                        @endif
+                    @endforeach
+                @endif
+
+                <!-- 커스텀 필드 입력 폼 (프로젝트 기수, 학생 선택, 표출일자 제외) -->
+                @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
+                    @foreach($board->custom_fields_config as $fieldConfig)
+                        @if(!in_array($fieldConfig['type'], ['project_term', 'student_select', 'display_date_range']))
                             @php
                                 $customFields = $post->custom_fields ? json_decode($post->custom_fields, true) : [];
                                 $fieldValue = $customFields[$fieldConfig['name']] ?? '';
@@ -384,31 +436,6 @@
                 </div>
                 @endif
 
-                <div class="board-form-group">
-                    <label for="thumbnail" class="board-form-label">썸네일 이미지</label>
-                    <div class="board-file-upload">
-                        <div class="board-file-input-wrapper">
-                            <input type="file" class="board-file-input" id="thumbnail" name="thumbnail" accept=".jpg,.jpeg,.png,.gif">
-                            <div class="board-file-input-content">
-                                <i class="fas fa-image"></i>
-                                <span class="board-file-input-text">썸네일 이미지를 선택하거나 여기로 드래그하세요</span>
-                                <span class="board-file-input-subtext">JPG, PNG, GIF 파일만 가능 (최대 5MB)</span>
-                            </div>
-                        </div>
-                        @if($post->thumbnail)
-                            <input type="hidden" name="existing_thumbnail" value="{{ $post->thumbnail }}">
-                            <div class="board-file-preview" id="thumbnailPreview">
-                                <img src="{{ asset('storage/' . $post->thumbnail) }}" alt="현재 썸네일" class="thumbnail-preview">
-                                <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="removeThumbnail()">
-                                    <i class="fas fa-trash"></i> 썸네일 제거
-                                </button>
-                            </div>
-                        @else
-                            <div class="board-file-preview" id="thumbnailPreview"></div>
-                        @endif
-                    </div>
-                </div>
-
                 @if($board->isFieldEnabled('attachments'))
                 <div class="board-form-group">
                     <label class="board-form-label">
@@ -456,10 +483,10 @@
                 @endif
 
                 <div class="board-form-actions">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" data-skip-button="true">
                         <i class="fas fa-save"></i> 저장
                     </button>
-                    <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'notice') }}" class="btn btn-secondary">취소</a>
+                    <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'top-notices') }}" class="btn btn-secondary">취소</a>
                 </div>
             </form>
         </div>
@@ -468,9 +495,154 @@
 @endsection
 
 @section('scripts')
-    <!-- jQuery, Bootstrap, Summernote JS (순서 중요!) -->
+    <!-- jQuery, Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
+    
+    <!-- initSummernote 오버라이드: board-post-form.js 로드 전에 실행 -->
+    <script>
+        // initSummernote 함수를 미리 정의하여 오버라이드 준비
+        // board-post-form.js가 로드되면 즉시 오버라이드
+        (function() {
+            // DOMContentLoaded 이벤트를 capture phase에서 먼저 등록
+            document.addEventListener('DOMContentLoaded', function(e) {
+                if (typeof window.initSummernote === 'function') {
+                    const originalInitSummernote = window.initSummernote;
+                    window.initSummernote = function() {
+                        try {
+                            const contentElement = $('#content');
+                            if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                                // input 타입이면 에디터 초기화하지 않고 바로 리턴
+                                console.log('[DEBUG] initSummernote: #content가 input이므로 초기화 건너뜀');
+                                return;
+                            }
+                            return originalInitSummernote.apply(this, arguments);
+                        } catch (error) {
+                            console.error('[DEBUG] initSummernote 오류:', error);
+                            // 오류 발생 시에도 계속 진행
+                            return;
+                        }
+                    };
+                    console.log('[DEBUG] initSummernote 오버라이드 완료 (DOMContentLoaded)');
+                }
+            }, true); // capture phase에서 실행
+            
+            // board-post-form.js 로드 직후 오버라이드 시도
+            function overrideInitSummernote() {
+                if (typeof window.initSummernote === 'function') {
+                    const originalInitSummernote = window.initSummernote;
+                    window.initSummernote = function() {
+                        try {
+                            const contentElement = $('#content');
+                            if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                                console.log('[DEBUG] initSummernote: #content가 input이므로 초기화 건너뜀');
+                                return;
+                            }
+                            return originalInitSummernote.apply(this, arguments);
+                        } catch (error) {
+                            console.error('[DEBUG] initSummernote 오류:', error);
+                            return;
+                        }
+                    };
+                    console.log('[DEBUG] initSummernote 오버라이드 완료 (로드 직후)');
+                    return true;
+                }
+                return false;
+            }
+            
+            // 즉시 시도
+            if (overrideInitSummernote()) {
+                return;
+            }
+            
+            // 주기적으로 체크 (최대 5초)
+            let checkCount = 0;
+            const maxChecks = 50;
+            const interval = setInterval(function() {
+                checkCount++;
+                if (overrideInitSummernote() || checkCount >= maxChecks) {
+                    clearInterval(interval);
+                }
+            }, 100);
+        })();
+    </script>
+    
     <script src="{{ asset('js/backoffice/board-post-form.js') }}"></script>
+    <script>
+        // board-post-form.js 로드 직후 즉시 오버라이드
+        (function() {
+            function overrideInitSummernote() {
+                if (typeof window.initSummernote === 'function') {
+                    const originalInitSummernote = window.initSummernote;
+                    window.initSummernote = function() {
+                        try {
+                            const contentElement = $('#content');
+                            if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                                console.log('[DEBUG] initSummernote: #content가 input이므로 초기화 건너뜀');
+                                return;
+                            }
+                            return originalInitSummernote.apply(this, arguments);
+                        } catch (error) {
+                            console.error('[DEBUG] initSummernote 오류:', error);
+                            return;
+                        }
+                    };
+                    console.log('[DEBUG] initSummernote 오버라이드 완료 (스크립트 로드 직후)');
+                    return true;
+                }
+                return false;
+            }
+            
+            // 즉시 시도
+            overrideInitSummernote();
+            
+            // DOMContentLoaded 후에도 한 번 더 시도
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', overrideInitSummernote);
+            } else {
+                overrideInitSummernote();
+            }
+        })();
+    </script>
+    
+    <script>
+        // 띠공지 게시판: #content 에디터 초기화 방지 및 스타일 제거
+        $(document).ready(function() {
+            // initSummernote 함수가 호출되기 전에 #content를 input으로 감지하도록 처리
+            const originalInitSummernote = window.initSummernote;
+            if (typeof originalInitSummernote === 'function') {
+                window.initSummernote = function() {
+                    const contentElement = $('#content');
+                    if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                        // input 타입이면 에디터 초기화하지 않고 바로 리턴
+                        return;
+                    }
+                    return originalInitSummernote.apply(this, arguments);
+                };
+            }
+            
+            // #content에 적용된 높이 스타일 제거 (인라인 스타일 포함)
+            const contentElement = $('#content');
+            if (contentElement.length && contentElement.prop('tagName') === 'INPUT') {
+                contentElement.removeAttr('style').css({
+                    'height': 'auto',
+                    'min-height': '38px',
+                    'resize': 'none'
+                });
+            }
+            
+            // 나중에 실행될 수 있는 스타일 적용도 방지
+            setTimeout(function() {
+                const contentEl = $('#content');
+                if (contentEl.length && contentEl.prop('tagName') === 'INPUT') {
+                    contentEl.removeAttr('style').css({
+                        'height': 'auto',
+                        'min-height': '38px',
+                        'resize': 'none'
+                    });
+                }
+            }, 200);
+            
+        });
+    </script>
 @endsection

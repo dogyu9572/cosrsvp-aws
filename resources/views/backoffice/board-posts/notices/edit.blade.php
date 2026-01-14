@@ -41,6 +41,126 @@
                 </div>
                 @endif
 
+                <!-- 프로젝트 기수 및 학생 선택 필드 (맨 위로 이동) -->
+                @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
+                    @foreach($board->custom_fields_config as $fieldConfig)
+                        @if(in_array($fieldConfig['type'], ['project_term', 'student_select']))
+                            @php
+                                $customFields = $post->custom_fields ? json_decode($post->custom_fields, true) : [];
+                                $fieldValue = $customFields[$fieldConfig['name']] ?? '';
+                            @endphp
+                            <div class="board-form-group">
+                                <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
+                                    {{ $fieldConfig['label'] }}
+                                    @if($fieldConfig['required'])
+                                        <span class="required">*</span>
+                                    @endif
+                                </label>
+                                
+                                @if($fieldConfig['type'] === 'project_term')
+                                    @php
+                                        $projectTermData = is_string($fieldValue) ? json_decode($fieldValue, true) : (is_array($fieldValue) ? $fieldValue : []);
+                                        $selectedTermId = $projectTermData['project_term_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_term');
+                                        $selectedCourseId = $projectTermData['course_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_course');
+                                        $selectedInstitutionId = $projectTermData['operating_institution_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_institution');
+                                        $selectedPeriodId = $projectTermData['project_period_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_period');
+                                        $selectedCountryId = $projectTermData['country_id'] ?? old('custom_field_' . $fieldConfig['name'] . '_country');
+                                    @endphp
+                                    <!-- 프로젝트 기수 선택 (5단계 계층 구조) -->
+                                    <div class="project-term-selector" data-field-name="{{ $fieldConfig['name'] }}">
+                                        <div class="board-form-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">기수</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_term" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_term"
+                                                        data-level="term"
+                                                        @if($fieldConfig['required']) required @endif>
+                                                    <option value="">전체</option>
+                                                    @foreach(\App\Models\ProjectTerm::active()->orderBy('created_at', 'desc')->get() as $term)
+                                                        <option value="{{ $term->id }}" @selected($selectedTermId == $term->id)>
+                                                            {{ $term->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">과정</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_course" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_course"
+                                                        data-level="course"
+                                                        data-selected="{{ $selectedCourseId }}">
+                                                    <option value="">전체</option>
+                                                </select>
+                                            </div>
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">운영기관</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_institution" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_institution"
+                                                        data-level="institution"
+                                                        data-selected="{{ $selectedInstitutionId }}">
+                                                    <option value="">전체</option>
+                                                </select>
+                                            </div>
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">프로젝트기간</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_period" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_period"
+                                                        data-level="period"
+                                                        data-selected="{{ $selectedPeriodId }}">
+                                                    <option value="">전체</option>
+                                                </select>
+                                            </div>
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">국가</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_country" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_country"
+                                                        data-level="country"
+                                                        data-selected="{{ $selectedCountryId }}">
+                                                    <option value="">전체</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <!-- 숨겨진 필드: 선택된 값들을 JSON으로 저장 -->
+                                        <input type="hidden" 
+                                               id="custom_field_{{ $fieldConfig['name'] }}" 
+                                               name="custom_field_{{ $fieldConfig['name'] }}" 
+                                               value="{{ old('custom_field_' . $fieldConfig['name'], $fieldValue) }}">
+                                    </div>
+                                @elseif($fieldConfig['type'] === 'student_select')
+                                    @php
+                                        $studentData = is_string($fieldValue) ? json_decode($fieldValue, true) : (is_array($fieldValue) ? $fieldValue : []);
+                                        $selectedStudentIds = $studentData['student_ids'] ?? (is_array($fieldValue) ? $fieldValue : []);
+                                        if (is_string($selectedStudentIds)) {
+                                            $selectedStudentIds = json_decode($selectedStudentIds, true) ?: [];
+                                        }
+                                    @endphp
+                                    <!-- 학생 선택 필드 (프로젝트 기수 선택에 따라 동적 로드) -->
+                                    <div class="student-selector" data-field-name="{{ $fieldConfig['name'] }}">
+                                        <div class="student-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                                            <div class="student-list-empty" style="color: #6c757d; text-align: center; padding: 20px;">
+                                                프로젝트 기수를 선택하면 학생 목록이 표시됩니다.
+                                            </div>
+                                            <div class="student-list" style="display: none;">
+                                                <!-- 학생 체크박스가 여기에 동적으로 추가됨 -->
+                                            </div>
+                                        </div>
+                                        <!-- 숨겨진 필드: 선택된 학생 ID 배열을 JSON으로 저장 -->
+                                        <input type="hidden" 
+                                               id="custom_field_{{ $fieldConfig['name'] }}" 
+                                               name="custom_field_{{ $fieldConfig['name'] }}" 
+                                               value="{{ old('custom_field_' . $fieldConfig['name'], is_array($selectedStudentIds) ? json_encode(['student_ids' => $selectedStudentIds]) : $fieldValue) }}">
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    @endforeach
+                @endif
+
                 @if($board->isFieldEnabled('category') && $categoryOptions && $categoryOptions->count() > 0)
                 <div class="board-form-group">
                     <label for="category" class="board-form-label">
@@ -92,27 +212,28 @@
                 </div>
                 @endif
 
-                <!-- 커스텀 필드 입력 폼 -->
+                <!-- 커스텀 필드 입력 폼 (프로젝트 기수, 학생 선택 제외) -->
                 @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
                     @foreach($board->custom_fields_config as $fieldConfig)
-                        @php
-                            $customFields = $post->custom_fields ? json_decode($post->custom_fields, true) : [];
-                            $fieldValue = $customFields[$fieldConfig['name']] ?? '';
-                            
-                            // 체크박스와 라디오 버튼의 경우 배열로 처리
-                            if (in_array($fieldConfig['type'], ['checkbox', 'radio']) && $fieldValue && !is_array($fieldValue)) {
-                                $fieldValue = [$fieldValue];
-                            }
-                        @endphp
-                        <div class="board-form-group">
-                            <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
-                                {{ $fieldConfig['label'] }}
-                                @if($fieldConfig['required'])
-                                    <span class="required">*</span>
-                                @endif
-                            </label>
-                            
-                            @if($fieldConfig['type'] === 'text')
+                        @if(!in_array($fieldConfig['type'], ['project_term', 'student_select']))
+                            @php
+                                $customFields = $post->custom_fields ? json_decode($post->custom_fields, true) : [];
+                                $fieldValue = $customFields[$fieldConfig['name']] ?? '';
+                                
+                                // 체크박스와 라디오 버튼의 경우 배열로 처리
+                                if (in_array($fieldConfig['type'], ['checkbox', 'radio']) && $fieldValue && !is_array($fieldValue)) {
+                                    $fieldValue = [$fieldValue];
+                                }
+                            @endphp
+                            <div class="board-form-group">
+                                <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
+                                    {{ $fieldConfig['label'] }}
+                                    @if($fieldConfig['required'])
+                                        <span class="required">*</span>
+                                    @endif
+                                </label>
+                                
+                                @if($fieldConfig['type'] === 'text')
                                 <input type="text" 
                                        class="board-form-control" 
                                        id="custom_field_{{ $fieldConfig['name'] }}" 
@@ -217,6 +338,7 @@
                             @endif
                             
                         </div>
+                        @endif
                     @endforeach
                 @endif
 

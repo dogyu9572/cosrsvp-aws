@@ -660,6 +660,317 @@ function syncEditorContent() {
     });
 }
 
+// 프로젝트 기수 선택 관리 클래스
+class ProjectTermSelector {
+    constructor(container) {
+        this.container = container;
+        this.fieldName = container.dataset.fieldName;
+        this.selects = {
+            term: container.querySelector('[data-level="term"]'),
+            course: container.querySelector('[data-level="course"]'),
+            institution: container.querySelector('[data-level="institution"]'),
+            period: container.querySelector('[data-level="period"]'),
+            country: container.querySelector('[data-level="country"]')
+        };
+        this.hiddenInput = container.querySelector('input[type="hidden"]');
+        this.init();
+    }
+    
+    init() {
+        // 인스턴스를 컨테이너에 저장 (폼 제출 시 접근용)
+        this.container._projectTermSelector = this;
+        
+        // 각 선택 박스에 change 이벤트 추가
+        this.selects.term.addEventListener('change', () => this.handleTermChange());
+        this.selects.course.addEventListener('change', () => this.handleCourseChange());
+        this.selects.institution.addEventListener('change', () => this.handleInstitutionChange());
+        this.selects.period.addEventListener('change', () => this.handlePeriodChange());
+        this.selects.country.addEventListener('change', () => this.handleCountryChange());
+        
+        // 수정 모드: 기존 선택값 복원 (term select의 value 또는 dataset.selected 확인)
+        const termId = this.selects.term.value || this.selects.term.dataset.selected;
+        if (termId) {
+            // term select에 value가 없으면 설정
+            if (!this.selects.term.value && termId) {
+                this.selects.term.value = termId;
+            }
+            this.loadInitialData();
+        }
+    }
+    
+    async loadInitialData() {
+        const termId = this.selects.term.value;
+        if (termId) {
+            await this.loadCourses(termId);
+            const courseId = this.selects.course.dataset.selected || this.selects.course.value;
+            if (courseId) {
+                this.selects.course.value = courseId;
+                await this.loadInstitutions(courseId);
+                const institutionId = this.selects.institution.dataset.selected || this.selects.institution.value;
+                if (institutionId) {
+                    this.selects.institution.value = institutionId;
+                    await this.loadPeriods(institutionId);
+                    const periodId = this.selects.period.dataset.selected || this.selects.period.value;
+                    if (periodId) {
+                        this.selects.period.value = periodId;
+                        await this.loadCountries(periodId);
+                        const countryId = this.selects.country.dataset.selected || this.selects.country.value;
+                        if (countryId) {
+                            this.selects.country.value = countryId;
+                        }
+                    }
+                }
+            }
+        }
+        this.updateHiddenInput();
+    }
+    
+    async handleTermChange() {
+        this.resetSelect(this.selects.course);
+        this.resetSelect(this.selects.institution);
+        this.resetSelect(this.selects.period);
+        this.resetSelect(this.selects.country);
+        
+        const termId = this.selects.term.value;
+        if (termId) {
+            await this.loadCourses(termId);
+        }
+        this.updateHiddenInput();
+        this.triggerStudentUpdate();
+    }
+    
+    async handleCourseChange() {
+        this.resetSelect(this.selects.institution);
+        this.resetSelect(this.selects.period);
+        this.resetSelect(this.selects.country);
+        
+        const courseId = this.selects.course.value;
+        if (courseId) {
+            await this.loadInstitutions(courseId);
+        }
+        this.updateHiddenInput();
+        this.triggerStudentUpdate();
+    }
+    
+    async handleInstitutionChange() {
+        this.resetSelect(this.selects.period);
+        this.resetSelect(this.selects.country);
+        
+        const institutionId = this.selects.institution.value;
+        if (institutionId) {
+            await this.loadPeriods(institutionId);
+        }
+        this.updateHiddenInput();
+        this.triggerStudentUpdate();
+    }
+    
+    async handlePeriodChange() {
+        this.resetSelect(this.selects.country);
+        
+        const periodId = this.selects.period.value;
+        if (periodId) {
+            await this.loadCountries(periodId);
+        }
+        this.updateHiddenInput();
+        this.triggerStudentUpdate();
+    }
+    
+    handleCountryChange() {
+        this.updateHiddenInput();
+        this.triggerStudentUpdate();
+    }
+    
+    async loadCourses(termId) {
+        try {
+            const response = await fetch(`/backoffice/courses/get-by-term/${termId}`);
+            const courses = await response.json();
+            this.populateSelect(this.selects.course, courses, 'name_ko', 'name_en');
+            this.selects.course.disabled = false;
+        } catch (error) {
+            console.error('과정 로드 오류:', error);
+        }
+    }
+    
+    async loadInstitutions(courseId) {
+        try {
+            const response = await fetch(`/backoffice/operating-institutions/get-by-course/${courseId}`);
+            const institutions = await response.json();
+            this.populateSelect(this.selects.institution, institutions, 'name_ko', 'name_en');
+            this.selects.institution.disabled = false;
+        } catch (error) {
+            console.error('운영기관 로드 오류:', error);
+        }
+    }
+    
+    async loadPeriods(institutionId) {
+        try {
+            const response = await fetch(`/backoffice/project-periods/get-by-institution/${institutionId}`);
+            const periods = await response.json();
+            this.populateSelect(this.selects.period, periods, 'name_ko', 'name_en');
+            this.selects.period.disabled = false;
+        } catch (error) {
+            console.error('프로젝트기간 로드 오류:', error);
+        }
+    }
+    
+    async loadCountries(periodId) {
+        try {
+            const response = await fetch(`/backoffice/countries/get-by-period/${periodId}`);
+            const countries = await response.json();
+            this.populateSelect(this.selects.country, countries, 'name_ko', 'name_en');
+            this.selects.country.disabled = false;
+        } catch (error) {
+            console.error('국가 로드 오류:', error);
+        }
+    }
+    
+    populateSelect(select, items, nameKoField, nameEnField) {
+        select.innerHTML = '<option value="">전체</option>';
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item[nameKoField] + (item[nameEnField] ? ' / ' + item[nameEnField] : '');
+            select.appendChild(option);
+        });
+    }
+    
+    resetSelect(select) {
+        select.innerHTML = '<option value="">전체</option>';
+        select.disabled = true;
+        select.value = '';
+    }
+    
+    updateHiddenInput() {
+        const data = {
+            project_term_id: this.selects.term.value || null,
+            course_id: this.selects.course.value || null,
+            operating_institution_id: this.selects.institution.value || null,
+            project_period_id: this.selects.period.value || null,
+            country_id: this.selects.country.value || null
+        };
+        this.hiddenInput.value = JSON.stringify(data);
+    }
+    
+    triggerStudentUpdate() {
+        // 학생 선택 필드에 변경 이벤트 전달
+        const event = new CustomEvent('projectTermChanged', {
+            detail: {
+                projectTermId: this.selects.term.value,
+                courseId: this.selects.course.value,
+                institutionId: this.selects.institution.value,
+                periodId: this.selects.period.value,
+                countryId: this.selects.country.value
+            }
+        });
+        document.dispatchEvent(event);
+    }
+}
+
+// 학생 선택 관리 클래스
+class StudentSelector {
+    constructor(container) {
+        this.container = container;
+        this.fieldName = container.dataset.fieldName;
+        this.emptyMessage = container.querySelector('.student-list-empty');
+        this.studentList = container.querySelector('.student-list');
+        this.hiddenInput = container.querySelector('input[type="hidden"]');
+        this.init();
+    }
+    
+    init() {
+        // 프로젝트 기수 변경 이벤트 리스닝
+        document.addEventListener('projectTermChanged', (e) => this.handleProjectTermChange(e.detail));
+    }
+    
+    async handleProjectTermChange(data) {
+        // 조건이 하나라도 있으면 학생 로드
+        if (data.projectTermId || data.courseId || data.institutionId || data.periodId || data.countryId) {
+            await this.loadStudents(data);
+        } else {
+            this.showEmptyMessage();
+        }
+    }
+    
+    async loadStudents(filters) {
+        try {
+            const params = new URLSearchParams();
+            if (filters.projectTermId) params.append('project_term_id', filters.projectTermId);
+            if (filters.courseId) params.append('course_id', filters.courseId);
+            if (filters.institutionId) params.append('operating_institution_id', filters.institutionId);
+            if (filters.periodId) params.append('project_period_id', filters.periodId);
+            if (filters.countryId) params.append('country_id', filters.countryId);
+            
+            const response = await fetch(`/backoffice/board-posts/get-members-by-project-term?${params}`);
+            const students = await response.json();
+            
+            this.renderStudents(students);
+        } catch (error) {
+            console.error('학생 로드 오류:', error);
+            this.showEmptyMessage();
+        }
+    }
+    
+    renderStudents(students) {
+        if (!students || students.length === 0) {
+            this.showEmptyMessage();
+            return;
+        }
+        
+        this.emptyMessage.style.display = 'none';
+        this.studentList.style.display = 'block';
+        this.studentList.innerHTML = '';
+        
+        // 기존 선택된 학생 ID 배열 가져오기
+        const selectedIds = this.getSelectedStudentIds();
+        
+        students.forEach(student => {
+            const div = document.createElement('div');
+            div.className = 'board-checkbox-item';
+            div.style.marginBottom = '8px';
+            div.innerHTML = `
+                <input type="checkbox" 
+                       class="board-checkbox-input student-checkbox" 
+                       id="student_${this.fieldName}_${student.id}" 
+                       value="${student.id}"
+                       ${selectedIds.includes(student.id) ? 'checked' : ''}>
+                <label for="student_${this.fieldName}_${student.id}" class="board-form-label">
+                    ${student.name}
+                </label>
+            `;
+            this.studentList.appendChild(div);
+        });
+        
+        // 체크박스 변경 이벤트 리스닝
+        this.studentList.querySelectorAll('.student-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', () => this.updateHiddenInput());
+        });
+    }
+    
+    showEmptyMessage() {
+        this.emptyMessage.style.display = 'block';
+        this.studentList.style.display = 'none';
+        this.studentList.innerHTML = '';
+        this.updateHiddenInput();
+    }
+    
+    getSelectedStudentIds() {
+        try {
+            const value = this.hiddenInput.value;
+            if (!value) return [];
+            const data = JSON.parse(value);
+            return data.student_ids || [];
+        } catch {
+            return [];
+        }
+    }
+    
+    updateHiddenInput() {
+        const selectedIds = Array.from(this.studentList.querySelectorAll('.student-checkbox:checked'))
+            .map(cb => parseInt(cb.value));
+        this.hiddenInput.value = JSON.stringify({ student_ids: selectedIds });
+    }
+}
+
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
     // jQuery 로드 확인 후 Summernote 초기화
@@ -696,9 +1007,162 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // 폼 제출 전 콘텐츠 동기화
-    $('form').on('submit', function() {
-        syncEditorContent();
+    // 프로젝트 기수 선택 초기화
+    document.querySelectorAll('.project-term-selector').forEach(container => {
+        new ProjectTermSelector(container);
     });
+    
+    // 학생 선택 초기화
+    document.querySelectorAll('.student-selector').forEach(container => {
+        new StudentSelector(container);
+    });
+    
+    // 표출일자 필드 초기화
+    document.querySelectorAll('.display-date-range-selector').forEach(container => {
+        initDisplayDateRange(container);
+    });
+    
+    // 저장 버튼 클릭 시 폼 제출 강제 (공통)
+    function initFormSubmitHandler() {
+        if (typeof $ !== 'undefined') {
+            $('button[type="submit"]').off('click.formSubmit').on('click.formSubmit', function(e) {
+                // 기본 폼 제출 방지 (중복 제출 방지)
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // submitting 상태 제거
+                const $button = $(this);
+                $button.removeClass('submitting');
+                $button.prop('disabled', false);
+                
+                // 약간의 지연 후 폼 제출 강제
+                setTimeout(function() {
+                    const $form = $button.closest('form');
+                    if ($form.length && !$form.data('submitting')) {
+                        $form.data('submitting', true);
+                        $form[0].submit();
+                    }
+                }, 50);
+            });
+        }
+    }
+    
+    // jQuery가 로드된 경우 즉시 실행, 아니면 대기
+    if (typeof $ !== 'undefined') {
+        initFormSubmitHandler();
+    } else {
+        const checkJQueryForSubmit = setInterval(() => {
+            if (typeof $ !== 'undefined') {
+                clearInterval(checkJQueryForSubmit);
+                initFormSubmitHandler();
+            }
+        }, 100);
+    }
+    
+    // 표출일자 입력 박스 전체 클릭 시 달력 열기 (공통)
+    document.querySelectorAll('.display-date-input').forEach(function(input) {
+        input.addEventListener('click', function(e) {
+            if (this.disabled) return;
+            // showPicker() 메서드가 지원되는 경우 사용
+            if (typeof this.showPicker === 'function') {
+                try {
+                    this.showPicker();
+                } catch (err) {
+                    // showPicker가 실패하면 기본 동작 (focus) 사용
+                    this.focus();
+                }
+            } else {
+                // showPicker가 지원되지 않으면 focus로 달력 열기 시도
+                this.focus();
+            }
+        });
+    });
+    
+    // 폼 제출 전 콘텐츠 동기화 및 커스텀 필드 업데이트
+    if (typeof $ !== 'undefined') {
+        $('form').off('submit.formSync').on('submit.formSync', function(e) {
+            // 이미 제출 중이면 중복 제출 방지
+            if ($(this).data('submitting')) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 에디터 콘텐츠 동기화
+            syncEditorContent();
+            
+            // 프로젝트 기수 필드 업데이트
+            document.querySelectorAll('.project-term-selector').forEach(container => {
+                const selector = container._projectTermSelector;
+                if (selector) {
+                    selector.updateHiddenInput();
+                }
+            });
+            
+            // 표출일자 필드 업데이트
+            document.querySelectorAll('.display-date-range-selector').forEach(container => {
+                const fieldName = container.dataset.fieldName;
+                const checkbox = container.querySelector(`#custom_field_${fieldName}_use`);
+                const startDateInput = container.querySelector(`#custom_field_${fieldName}_start`);
+                const endDateInput = container.querySelector(`#custom_field_${fieldName}_end`);
+                const hiddenInput = container.querySelector(`#custom_field_${fieldName}`);
+                
+                if (checkbox && startDateInput && endDateInput && hiddenInput) {
+                    const data = {
+                        use_display_date: checkbox.checked,
+                        start_date: startDateInput.value || null,
+                        end_date: endDateInput.value || null
+                    };
+                    hiddenInput.value = JSON.stringify(data);
+                }
+            });
+            
+            // submitting 상태 제거
+            $(this).find('button[type="submit"]').removeClass('submitting').prop('disabled', false);
+        });
+    }
 });
 
+// 표출일자 필드 제어 함수
+function initDisplayDateRange(container) {
+    const fieldName = container.dataset.fieldName;
+    const checkbox = container.querySelector(`#custom_field_${fieldName}_use`);
+    const startDateInput = container.querySelector(`#custom_field_${fieldName}_start`);
+    const endDateInput = container.querySelector(`#custom_field_${fieldName}_end`);
+    const hiddenInput = container.querySelector(`#custom_field_${fieldName}`);
+    
+    if (!checkbox || !startDateInput || !endDateInput || !hiddenInput) {
+        return;
+    }
+    
+    // 체크박스 변경 시 날짜 필드 활성/비활성화
+    checkbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        startDateInput.disabled = !isChecked;
+        endDateInput.disabled = !isChecked;
+        
+        if (!isChecked) {
+            // 체크 해제 시 날짜 필드 초기화
+            startDateInput.value = '';
+            endDateInput.value = '';
+        }
+        
+        updateDisplayDateHiddenInput();
+    });
+    
+    // 날짜 변경 시 hidden 필드 업데이트
+    startDateInput.addEventListener('change', updateDisplayDateHiddenInput);
+    endDateInput.addEventListener('change', updateDisplayDateHiddenInput);
+    
+    // hidden 필드 업데이트 함수
+    function updateDisplayDateHiddenInput() {
+        const data = {
+            use_display_date: checkbox.checked,
+            start_date: startDateInput.value || null,
+            end_date: endDateInput.value || null
+        };
+        hiddenInput.value = JSON.stringify(data);
+    }
+    
+    // 초기 상태 설정
+    updateDisplayDateHiddenInput();
+}

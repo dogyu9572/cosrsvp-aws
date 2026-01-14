@@ -21,8 +21,8 @@
                 <button type="button" id="bulk-delete-btn" class="btn btn-danger">
                     <i class="fas fa-trash"></i> 선택 삭제
                 </button>
-                <a href="{{ route('backoffice.board-posts.create', $board->slug ?? 'notice') }}" class="btn btn-success">
-                    <i class="fas fa-plus"></i> 새 게시글
+                <a href="{{ route('backoffice.board-posts.create', $board->slug ?? 'notices') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> 등록
                 </a>              
             </div>
         </div>
@@ -31,7 +31,47 @@
             <div class="board-card-body">
                 <!-- 검색 필터 -->
                 <div class="board-filter">
-                    <form method="GET" action="{{ route('backoffice.board-posts.index', $board->slug ?? 'notice') }}" class="filter-form">
+                    <form method="GET" action="{{ route('backoffice.board-posts.index', $board->slug ?? 'notices') }}" class="filter-form" id="filterForm">
+                        <!-- 프로젝트 기수 필터 -->
+                        <div class="filter-row" style="margin-bottom: 15px;">
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label for="filter_project_term_id" class="filter-label">기수</label>
+                                <select id="filter_project_term_id" name="filter_project_term_id" class="filter-select project-term-filter" data-level="term">
+                                    <option value="">전체</option>
+                                    @foreach(\App\Models\ProjectTerm::active()->orderBy('created_at', 'desc')->get() as $term)
+                                        <option value="{{ $term->id }}" @selected(request('filter_project_term_id') == $term->id)>
+                                            {{ $term->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label for="filter_course_id" class="filter-label">과정</label>
+                                <select id="filter_course_id" name="filter_course_id" class="filter-select project-term-filter" data-level="course" data-selected="{{ request('filter_course_id') }}">
+                                    <option value="">전체</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label for="filter_operating_institution_id" class="filter-label">운영기관</label>
+                                <select id="filter_operating_institution_id" name="filter_operating_institution_id" class="filter-select project-term-filter" data-level="institution" data-selected="{{ request('filter_operating_institution_id') }}">
+                                    <option value="">전체</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label for="filter_project_period_id" class="filter-label">프로젝트기간</label>
+                                <select id="filter_project_period_id" name="filter_project_period_id" class="filter-select project-term-filter" data-level="period" data-selected="{{ request('filter_project_period_id') }}">
+                                    <option value="">전체</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="flex: 1; min-width: 150px;">
+                                <label for="filter_country_id" class="filter-label">국가</label>
+                                <select id="filter_country_id" name="filter_country_id" class="filter-select project-term-filter" data-level="country" data-selected="{{ request('filter_country_id') }}">
+                                    <option value="">전체</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- 기존 필터 -->
                         <div class="filter-row">
                             <div class="filter-group">
                                 <label for="start_date" class="filter-label">등록일 시작</label>
@@ -63,7 +103,7 @@
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-search"></i> 검색
                                     </button>
-                                    <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'notice') }}"
+                                    <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'notices') }}"
                                         class="btn btn-secondary">
                                         <i class="fas fa-undo"></i> 초기화
                                     </a>
@@ -79,12 +119,17 @@
                         <span class="list-count">Total : {{ $posts->total() }}</span>
                     </div>
                     <div class="list-controls">
-                        <form method="GET" action="{{ route('backoffice.board-posts.index', $board->slug ?? 'notice') }}" class="per-page-form">
+                        <form method="GET" action="{{ route('backoffice.board-posts.index', $board->slug ?? 'notices') }}" class="per-page-form">
                             <input type="hidden" name="start_date" value="{{ request('start_date') }}">
                             <input type="hidden" name="end_date" value="{{ request('end_date') }}">
                             <input type="hidden" name="keyword" value="{{ request('keyword') }}">
                             <input type="hidden" name="search_type" value="{{ request('search_type') }}">
-                            <label for="per_page" class="per-page-label">표시 개수:</label>
+                            <input type="hidden" name="filter_project_term_id" value="{{ request('filter_project_term_id') }}">
+                            <input type="hidden" name="filter_course_id" value="{{ request('filter_course_id') }}">
+                            <input type="hidden" name="filter_operating_institution_id" value="{{ request('filter_operating_institution_id') }}">
+                            <input type="hidden" name="filter_project_period_id" value="{{ request('filter_project_period_id') }}">
+                            <input type="hidden" name="filter_country_id" value="{{ request('filter_country_id') }}">
+                            <label for="per_page" class="per-page-label">목록갯수:</label>
                             <select name="per_page" id="per_page" class="per-page-select" onchange="this.form.submit()">
                                 <option value="10" @selected(request('per_page', 15) == 10)>10개</option>
                                 <option value="20" @selected(request('per_page', 15) == 20)>20개</option>
@@ -106,11 +151,11 @@
                                     <th class="w5">순서</th>
                                 @endif
                                 <th class="w5">번호</th>
-                                <th class="w10">구분</th>
+                                <th>프로젝트 기수</th>
+                                <th class="w15">학생</th>
                                 <th>제목</th>
-                                <th class="w10">작성자</th>
-                                <th class="w10">작성일</th>
-                                <th class="w15">관리</th>
+                                <th class="w10">등록일</th>
+                                <th class="w10">관리</th>
                             </tr>
                         </thead>
                         <tbody @if($board->enable_sorting) id="sortable-tbody" @endif>
@@ -135,23 +180,25 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="status-badge status-general">일반</span>
+                                        {{ $post->project_term_display_text ?? '전체' }}
+                                    </td>
+                                    <td>
+                                        {{ $post->students_display_text ?? '전체' }}
                                     </td>
                                     <td>
                                         {{ $post->title }}
                                     </td>
-                                    <td>{{ $post->author_name ?? '알 수 없음' }}</td>
-                                    <td>{{ $post->created_at->format('Y-m-d') }}</td>
+                                    <td>{{ $post->created_at->format('Y.m.d') }}</td>
                                     <td>
                                         <div class="board-btn-group">
-                                            <a href="{{ route('backoffice.board-posts.edit', [$board->slug ?? 'notice', $post->id]) }}"
+                                            <a href="{{ route('backoffice.board-posts.edit', [$board->slug ?? 'notices', $post->id]) }}"
                                                 class="btn btn-primary btn-sm">
                                                 <i class="fas fa-edit"></i> 수정
                                             </a>
                                             <form
-                                                action="{{ route('backoffice.board-posts.destroy', [$board->slug ?? 'notice', $post->id]) }}"
+                                                action="{{ route('backoffice.board-posts.destroy', [$board->slug ?? 'notices', $post->id]) }}"
                                                 method="POST" class="d-inline"
-                                                onsubmit="return confirm('정말 이 게시글을 삭제하시겠습니까?');">
+                                                onsubmit="return confirm('해당 게시물이 삭제됩니다. 정말 삭제하시겠습니까?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger btn-sm">
@@ -178,6 +225,7 @@
 
 @section('scripts')
     <script src="{{ asset('js/backoffice/board-posts.js') }}"></script>
+    <script src="{{ asset('js/backoffice/board-posts-filter.js') }}"></script>
     @if($board->enable_sorting)
         <script src="{{ asset('js/backoffice/sorting.js') }}"></script>
     @endif

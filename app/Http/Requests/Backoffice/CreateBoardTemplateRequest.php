@@ -69,7 +69,7 @@ class CreateBoardTemplateRequest extends FormRequest
             'custom_fields' => 'nullable|array',
             'custom_fields.*.name' => 'required_with:custom_fields|string|max:50',
             'custom_fields.*.label' => 'required_with:custom_fields|string|max:100',
-            'custom_fields.*.type' => 'required_with:custom_fields|in:text,textarea,number,date,select,radio,checkbox',
+            'custom_fields.*.type' => 'required_with:custom_fields|in:text,textarea,editor,number,date,select,radio,checkbox',
             'custom_fields.*.max_length' => 'nullable|integer|min:1',
             'custom_fields.*.required' => 'nullable|boolean',
             'custom_fields.*.options' => 'nullable|string',

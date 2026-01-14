@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Board;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 
 /**
  * @method string route(string $param)
@@ -120,6 +121,16 @@ class BoardPostRequest extends FormRequest
                 }
             }
             
+            // 프로젝트 기수 필드 (JSON 형식 검증)
+            if ($fieldConfig['type'] === 'project_term') {
+                $fieldRules[] = 'json';
+            }
+            
+            // 표출일자 범위 필드 (JSON 형식 검증)
+            if ($fieldConfig['type'] === 'display_date_range') {
+                $fieldRules[] = 'json';
+            }
+            
             $rules["custom_field_{$fieldName}"] = $fieldRules;
         }
         
@@ -213,5 +224,38 @@ class BoardPostRequest extends FormRequest
         }
         
         return $messages;
+    }
+
+    /**
+     * 커스텀 유효성 검사 추가 (프로젝트 기수 필드 JSON 내부 검증)
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function ($validator) {
+            $slug = $this->route('slug');
+            $board = Board::where('slug', $slug)->first();
+            
+            if (!$board || !$board->custom_fields_config) {
+                return;
+            }
+
+            foreach ($board->custom_fields_config as $fieldConfig) {
+                $fieldName = $fieldConfig['name'];
+                $fieldKey = "custom_field_{$fieldName}";
+                $value = $this->input($fieldKey);
+                
+                // 프로젝트 기수 필드 검증 (필수인 경우 JSON 내부에 project_term_id가 있는지 확인)
+                if ($fieldConfig['type'] === 'project_term' && $fieldConfig['required']) {
+                    if (empty($value)) {
+                        $validator->errors()->add($fieldKey, "{$fieldConfig['label']}은(는) 필수 입력 항목입니다.");
+                    } else {
+                        $data = json_decode($value, true);
+                        if (!is_array($data) || empty($data['project_term_id'])) {
+                            $validator->errors()->add($fieldKey, "{$fieldConfig['label']}을(를) 선택해주세요.");
+                        }
+                    }
+                }
+            }
+        });
     }
 }

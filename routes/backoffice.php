@@ -302,4 +302,8 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
     Route::resource('schedules', ScheduleController::class, [
         'names' => 'backoffice.schedules'
     ])->except(['index', 'show', 'create', 'edit']);
+    
+    // 게시글 관리 - 프로젝트 기수별 회원 조회 (AJAX)
+    Route::get('board-posts/get-members-by-project-term', [BoardPostController::class, 'getMembersByProjectTerm'])
+        ->name('backoffice.board-posts.get-members-by-project-term');
 });

@@ -118,6 +118,8 @@ class BoardTemplateService
         
         // 이 템플릿을 사용하는 모든 게시판 업데이트
         if ($updated) {
+            // 템플릿을 새로고침하여 최신 데이터 가져오기
+            $template->refresh();
             $this->syncBoardsWithTemplate($template);
         }
         
@@ -248,12 +250,63 @@ class BoardTemplateService
      */
     private function syncBoardsWithTemplate(BoardTemplate $template): void
     {
-        $boards = $template->boards;
+        $boards = $template->boards()->get();
+        
+        // 특수 타입 목록
+        $specialTypes = ['project_term', 'display_date_range', 'student_select'];
         
         foreach ($boards as $board) {
-            $board->update([
+            // 기존 게시판의 custom_fields_config 가져오기
+            $existingConfig = is_string($board->custom_fields_config) 
+                ? json_decode($board->custom_fields_config, true) 
+                : ($board->custom_fields_config ?? []);
+            
+            // 기존 필드를 name으로 매핑
+            $existingFieldsMap = [];
+            if (is_array($existingConfig)) {
+                foreach ($existingConfig as $field) {
+                    if (isset($field['name'])) {
+                        $existingFieldsMap[$field['name']] = $field;
+                    }
+                }
+            }
+            
+            // 템플릿의 custom_fields_config 처리
+            $templateConfig = is_string($template->custom_fields_config)
+                ? json_decode($template->custom_fields_config, true)
+                : ($template->custom_fields_config ?? []);
+            
+            $mergedConfig = [];
+            if (is_array($templateConfig)) {
+                foreach ($templateConfig as $templateField) {
+                    $fieldName = $templateField['name'] ?? null;
+                    
+                    if (!$fieldName) {
+                        continue;
+                    }
+                    
+                    // 기존 필드가 있고 특수 타입이면 type 보존
+                    if (isset($existingFieldsMap[$fieldName])) {
+                        $existingField = $existingFieldsMap[$fieldName];
+                        if (isset($existingField['type']) && in_array($existingField['type'], $specialTypes)) {
+                            // 템플릿 설정을 사용하되 type만 기존 값 유지
+                            $mergedField = $templateField;
+                            $mergedField['type'] = $existingField['type'];
+                            $mergedConfig[] = $mergedField;
+                        } else {
+                            // 일반 타입이면 템플릿 설정 사용
+                            $mergedConfig[] = $templateField;
+                        }
+                    } else {
+                        // 기존 필드가 없으면 템플릿 설정 사용
+                        $mergedConfig[] = $templateField;
+                    }
+                }
+            }
+            
+            $updateData = [
                 'field_config' => $template->field_config,
-                'custom_fields_config' => $template->custom_fields_config,
+                'custom_fields_config' => !empty($mergedConfig) ? $mergedConfig : $template->custom_fields_config,
                 'enable_notice' => $template->enable_notice,
                 'enable_sorting' => $template->enable_sorting,
                 'is_single_page' => $template->is_single_page,
@@ -261,7 +314,14 @@ class BoardTemplateService
                 'permission_read' => $template->permission_read,
                 'permission_write' => $template->permission_write,
                 'permission_comment' => $template->permission_comment,
-            ]);
+            ];
+            
+            // enable_category는 boards 테이블에 없을 수 있으므로 확인 후 추가
+            if (in_array('enable_category', $board->getFillable())) {
+                $updateData['enable_category'] = $template->enable_category;
+            }
+            
+            $board->update($updateData);
         }
     }
 }

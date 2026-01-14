@@ -48,6 +48,162 @@
                 </div>
                 @endif
 
+                <!-- 프로젝트 기수 및 학생 선택 필드 (맨 위로 이동) -->
+                @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
+                    @foreach($board->custom_fields_config as $fieldConfig)
+                        @if(in_array($fieldConfig['type'], ['project_term', 'student_select']))
+                            <div class="board-form-group">
+                                <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
+                                    {{ $fieldConfig['label'] }}
+                                    @if($fieldConfig['required'])
+                                        <span class="required">*</span>
+                                    @endif
+                                </label>
+                                
+                                @if($fieldConfig['type'] === 'project_term')
+                                    <!-- 프로젝트 기수 선택 (5단계 계층 구조) -->
+                                    <div class="project-term-selector" data-field-name="{{ $fieldConfig['name'] }}">
+                                        <div class="board-form-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">기수</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_term" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_term"
+                                                        data-level="term"
+                                                        @if($fieldConfig['required']) required @endif>
+                                                    <option value="">전체</option>
+                                                    @foreach(\App\Models\ProjectTerm::active()->orderBy('created_at', 'desc')->get() as $term)
+                                                        <option value="{{ $term->id }}" @selected(old('custom_field_' . $fieldConfig['name'] . '_term') == $term->id)>
+                                                            {{ $term->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">과정</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_course" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_course"
+                                                        data-level="course"
+                                                        disabled>
+                                                    <option value="">전체</option>
+                                                </select>
+                                            </div>
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">운영기관</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_institution" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_institution"
+                                                        data-level="institution"
+                                                        disabled>
+                                                    <option value="">전체</option>
+                                                </select>
+                                            </div>
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">프로젝트기간</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_period" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_period"
+                                                        data-level="period"
+                                                        disabled>
+                                                    <option value="">전체</option>
+                                                </select>
+                                            </div>
+                                            <div class="board-form-col" style="flex: 1; min-width: 150px;">
+                                                <label class="board-form-label" style="font-size: 12px; margin-bottom: 5px;">국가</label>
+                                                <select class="board-form-control project-term-select" 
+                                                        id="custom_field_{{ $fieldConfig['name'] }}_country" 
+                                                        name="custom_field_{{ $fieldConfig['name'] }}_country"
+                                                        data-level="country"
+                                                        disabled>
+                                                    <option value="">전체</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <!-- 숨겨진 필드: 선택된 값들을 JSON으로 저장 -->
+                                        <input type="hidden" 
+                                               id="custom_field_{{ $fieldConfig['name'] }}" 
+                                               name="custom_field_{{ $fieldConfig['name'] }}" 
+                                               value="{{ old('custom_field_' . $fieldConfig['name']) }}">
+                                    </div>
+                                @elseif($fieldConfig['type'] === 'student_select')
+                                    <!-- 학생 선택 필드 (프로젝트 기수 선택에 따라 동적 로드) -->
+                                    <div class="student-selector" data-field-name="{{ $fieldConfig['name'] }}">
+                                        <div class="student-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                                            <div class="student-list-empty" style="color: #6c757d; text-align: center; padding: 20px;">
+                                                프로젝트 기수를 선택하면 학생 목록이 표시됩니다.
+                                            </div>
+                                            <div class="student-list" style="display: none;">
+                                                <!-- 학생 체크박스가 여기에 동적으로 추가됨 -->
+                                            </div>
+                                        </div>
+                                        <!-- 숨겨진 필드: 선택된 학생 ID 배열을 JSON으로 저장 -->
+                                        <input type="hidden" 
+                                               id="custom_field_{{ $fieldConfig['name'] }}" 
+                                               name="custom_field_{{ $fieldConfig['name'] }}" 
+                                               value="{{ old('custom_field_' . $fieldConfig['name']) }}">
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    @endforeach
+                @endif
+
+                <!-- 표출일자 필드 (별도 처리) -->
+                @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
+                    @foreach($board->custom_fields_config as $fieldConfig)
+                        @if($fieldConfig['type'] === 'display_date_range')
+                            @php
+                                $displayDateData = old('custom_field_' . $fieldConfig['name']) ? json_decode(old('custom_field_' . $fieldConfig['name']), true) : ['use_display_date' => false, 'start_date' => '', 'end_date' => ''];
+                                $useDisplayDate = $displayDateData['use_display_date'] ?? false;
+                                $startDate = $displayDateData['start_date'] ?? '';
+                                $endDate = $displayDateData['end_date'] ?? '';
+                            @endphp
+                            <div class="board-form-group display-date-range-selector" data-field-name="{{ $fieldConfig['name'] }}">
+                                <label class="board-form-label">
+                                    {{ $fieldConfig['label'] }}
+                                    @if($fieldConfig['required'])
+                                        <span class="required">*</span>
+                                    @endif
+                                </label>
+                                <div class="board-checkbox-item" style="margin-bottom: 10px; margin-left: 0; padding-left: 0;">
+                                    <input type="checkbox" 
+                                           class="board-checkbox-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_use" 
+                                           name="custom_field_{{ $fieldConfig['name'] }}_use" 
+                                           value="1"
+                                           @checked($useDisplayDate)>
+                                    <label for="custom_field_{{ $fieldConfig['name'] }}_use" class="board-form-label" style="margin-left: 0;">
+                                        표출일자 사용
+                                    </label>
+                                </div>
+                                <div class="date-range-inputs" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; margin-left: 0; padding-left: 0; max-width: 600px;">
+                                    <input type="date" 
+                                           class="board-form-control display-date-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_start" 
+                                           style="flex: 1; max-width: 250px;"
+                                           value="{{ $startDate }}"
+                                           @if(!$useDisplayDate) disabled @endif>
+                                    <span style="margin: 0 5px;">~</span>
+                                    <input type="date" 
+                                           class="board-form-control display-date-input" 
+                                           id="custom_field_{{ $fieldConfig['name'] }}_end" 
+                                           style="flex: 1; max-width: 250px;"
+                                           value="{{ $endDate }}"
+                                           @if(!$useDisplayDate) disabled @endif>
+                                </div>
+                                <small class="board-form-text" style="color: #6c757d;">
+                                    *표출일자를 사용하지 않을시, 상시 표출되는 팝업이 생성됩니다.
+                                </small>
+                                <input type="hidden" 
+                                       id="custom_field_{{ $fieldConfig['name'] }}" 
+                                       name="custom_field_{{ $fieldConfig['name'] }}" 
+                                       value="{{ old('custom_field_' . $fieldConfig['name'], json_encode(['use_display_date' => $useDisplayDate, 'start_date' => $startDate, 'end_date' => $endDate])) }}">
+                            </div>
+                        @endif
+                    @endforeach
+                @endif
+
                 @if($board->isFieldEnabled('category') && $categoryOptions && $categoryOptions->count() > 0)
                 <div class="board-form-group">
                     <label for="category" class="board-form-label">
@@ -70,7 +226,7 @@
                 @if($board->isFieldEnabled('title'))
                 <div class="board-form-group">
                     <label for="title" class="board-form-label">
-                        제목
+                        국문 제목
                         @if($board->isFieldRequired('title'))
                             <span class="required">*</span>
                         @endif
@@ -82,7 +238,7 @@
                 @if($board->isFieldEnabled('content'))
                 <div class="board-form-group">
                     <label for="content" class="board-form-label">
-                        내용
+                        국문 내용
                         @if($board->isFieldRequired('content'))
                             <span class="required">*</span>
                         @endif
@@ -99,18 +255,19 @@
                 </div>
                 @endif
 
-                <!-- 커스텀 필드 입력 폼 -->
+                <!-- 커스텀 필드 입력 폼 (프로젝트 기수, 학생 선택, 표출일자 제외) -->
                 @if($board->custom_fields_config && count($board->custom_fields_config) > 0)
                     @foreach($board->custom_fields_config as $fieldConfig)
-                        <div class="board-form-group">
-                            <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
-                                {{ $fieldConfig['label'] }}
-                                @if($fieldConfig['required'])
-                                    <span class="required">*</span>
-                                @endif
-                            </label>
-                            
-                            @if($fieldConfig['type'] === 'text')
+                        @if(!in_array($fieldConfig['type'], ['project_term', 'student_select', 'display_date_range']))
+                            <div class="board-form-group">
+                                <label for="custom_field_{{ $fieldConfig['name'] }}" class="board-form-label">
+                                    {{ $fieldConfig['label'] }}
+                                    @if($fieldConfig['required'])
+                                        <span class="required">*</span>
+                                    @endif
+                                </label>
+                                
+                                @if($fieldConfig['type'] === 'text')
                                 <input type="text" 
                                        class="board-form-control" 
                                        id="custom_field_{{ $fieldConfig['name'] }}" 
@@ -207,6 +364,7 @@
                                 <small class="board-form-text">최대 {{ $fieldConfig['max_length'] }}자 (영어 기준)까지 입력 가능합니다.</small>
                             @endif
                         </div>
+                        @endif
                     @endforeach
                 @endif
 
@@ -251,6 +409,21 @@
                     <small class="board-form-text">체크하면 본인만 조회할 수 있습니다.</small>
                 </div>
                 @endif
+
+                <div class="board-form-group">
+                    <label for="thumbnail" class="board-form-label">썸네일 이미지</label>
+                    <div class="board-file-upload">
+                        <div class="board-file-input-wrapper">
+                            <input type="file" class="board-file-input" id="thumbnail" name="thumbnail" accept=".jpg,.jpeg,.png,.gif">
+                            <div class="board-file-input-content">
+                                <i class="fas fa-image"></i>
+                                <span class="board-file-input-text">썸네일 이미지를 선택하거나 여기로 드래그하세요</span>
+                                <span class="board-file-input-subtext">JPG, PNG, GIF 파일만 가능 (최대 5MB)</span>
+                            </div>
+                        </div>
+                        <div class="board-file-preview" id="thumbnailPreview"></div>
+                    </div>
+                </div>
 
                 @if($board->isFieldEnabled('attachments'))
                 <div class="board-form-group">

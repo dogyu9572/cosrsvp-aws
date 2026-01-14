@@ -16,7 +16,7 @@
     <div class="board-container">
         <div class="board-page-header">
             <div class="board-page-buttons">
-                <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'notice') }}" class="btn btn-secondary btn-sm">
+                <a href="{{ route('backoffice.board-posts.index', $board->slug ?? 'top-notices') }}" class="btn btn-secondary btn-sm">
                     <i class="fas fa-arrow-left"></i> 목록으로
                 </a>
             </div>
@@ -109,10 +109,10 @@
                 @endif
 
                 <div class="board-post-actions">
-                    <a href="{{ route('backoffice.board-posts.edit', [$board->slug ?? 'notice', $post->id]) }}" class="btn btn-primary">
+                    <a href="{{ route('backoffice.board-posts.edit', [$board->slug ?? 'top-notices', $post->id]) }}" class="btn btn-primary">
                         <i class="fas fa-edit"></i> 수정
                     </a>
-                    <form action="{{ route('backoffice.board-posts.destroy', [$board->slug ?? 'notice', $post->id]) }}" 
+                    <form action="{{ route('backoffice.board-posts.destroy', [$board->slug ?? 'top-notices', $post->id]) }}" 
                           method="POST" class="d-inline" 
                           onsubmit="return confirm('정말 이 게시글을 삭제하시겠습니까?');">
                         @csrf

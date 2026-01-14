@@ -135,6 +135,18 @@ class BoardService
         // 게시판 생성
         $board = Board::create($data);
 
+        // 게시판 관련 파일 생성 (뷰 파일, 테이블, 마이그레이션)
+        try {
+            $fileGeneratorService = new BoardFileGeneratorService();
+            $fileGeneratorService->generateBoardFiles($board);
+        } catch (\Exception $e) {
+            Log::error('게시판 파일 생성 실패', [
+                'board_id' => $board->id,
+                'board_slug' => $board->slug,
+                'error' => $e->getMessage()
+            ]);
+            // 파일 생성 실패해도 게시판은 생성된 상태로 반환
+        }
 
         return $board;
     }

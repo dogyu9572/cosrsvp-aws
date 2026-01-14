@@ -5,7 +5,54 @@ let customFieldCounter = 0;
 document.addEventListener('DOMContentLoaded', function() {
     initializeCustomFieldCounter();
     initializeCategoryGroupToggle();
+    initializeFormSubmitHandler();
 });
+
+/**
+ * 폼 제출 핸들러 초기화 (419 오류 방지)
+ */
+function initializeFormSubmitHandler() {
+    // jQuery가 로드된 경우
+    if (typeof $ !== 'undefined') {
+        $('button[type="submit"]').off('click.formSubmit').on('click.formSubmit', function(e) {
+            // submitting 상태 제거
+            const $button = $(this);
+            $button.removeClass('submitting');
+            $button.prop('disabled', false);
+            
+            // 약간의 지연 후 폼 제출 강제 (다른 이벤트 핸들러가 preventDefault를 호출했을 수 있음)
+            setTimeout(function() {
+                const $form = $button.closest('form');
+                if ($form.length) {
+                    $form[0].submit();
+                }
+            }, 50);
+        });
+        
+        // 폼 제출 이벤트에서 submitting 상태 제거
+        $('form').on('submit', function(e) {
+            $(this).find('button[type="submit"]').removeClass('submitting').prop('disabled', false);
+        });
+    } else {
+        // jQuery가 없는 경우 바닐라 JS 사용
+        const submitButtons = document.querySelectorAll('button[type="submit"]');
+        submitButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                // submitting 상태 제거
+                this.classList.remove('submitting');
+                this.disabled = false;
+                
+                // 약간의 지연 후 폼 제출 강제
+                setTimeout(function() {
+                    const form = button.closest('form');
+                    if (form) {
+                        form.submit();
+                    }
+                }, 50);
+            });
+        });
+    }
+}
 
 /**
  * 커스텀 필드 카운터 초기화
@@ -70,6 +117,7 @@ function addCustomField() {
                         <select class="board-form-control" name="custom_fields[${existingFields}][type]">
                             <option value="text">텍스트</option>
                             <option value="textarea">긴 텍스트</option>
+                            <option value="editor">에디터 (리치 텍스트)</option>
                             <option value="number">숫자</option>
                             <option value="date">날짜</option>
                             <option value="select">선택 (드롭다운)</option>
@@ -168,6 +216,7 @@ function addCustomFieldWithData(fieldData) {
                         <select class="board-form-control" name="custom_fields[${existingFields}][type]">
                             <option value="text" ${fieldData.type === 'text' ? 'selected' : ''}>텍스트</option>
                             <option value="textarea" ${fieldData.type === 'textarea' ? 'selected' : ''}>긴 텍스트</option>
+                            <option value="editor" ${fieldData.type === 'editor' ? 'selected' : ''}>에디터 (리치 텍스트)</option>
                             <option value="number" ${fieldData.type === 'number' ? 'selected' : ''}>숫자</option>
                             <option value="date" ${fieldData.type === 'date' ? 'selected' : ''}>날짜</option>
                             <option value="select" ${fieldData.type === 'select' ? 'selected' : ''}>선택 (드롭다운)</option>
