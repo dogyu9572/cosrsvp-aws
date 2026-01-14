@@ -23,6 +23,7 @@ use App\Http\Controllers\Backoffice\OperatingInstitutionController;
 use App\Http\Controllers\Backoffice\ProjectPeriodController;
 use App\Http\Controllers\Backoffice\CountryController;
 use App\Http\Controllers\Backoffice\ScheduleController;
+use App\Http\Controllers\Backoffice\InquiryController;
 
 // =============================================================================
 // 백오피스 인증 라우트
@@ -306,4 +307,14 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
     // 게시글 관리 - 프로젝트 기수별 회원 조회 (AJAX)
     Route::get('board-posts/get-members-by-project-term', [BoardPostController::class, 'getMembersByProjectTerm'])
         ->name('backoffice.board-posts.get-members-by-project-term');
+
+    // 문의 관리
+    Route::get('inquiries', [InquiryController::class, 'index'])
+        ->name('backoffice.inquiries.index');
+    Route::get('inquiries/{id}', [InquiryController::class, 'show'])
+        ->name('backoffice.inquiries.show');
+    Route::post('inquiries/{id}/reply', [InquiryController::class, 'reply'])
+        ->name('backoffice.inquiries.reply');
+    Route::delete('inquiries/{id}', [InquiryController::class, 'destroy'])
+        ->name('backoffice.inquiries.destroy');
 });

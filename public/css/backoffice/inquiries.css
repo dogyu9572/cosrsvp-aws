@@ -1,0 +1,70 @@
+/**
+ * 문의 관리 페이지 전용 CSS
+ */
+
+/* 문의 목록 페이지 - 제목 링크 색상 (제목 컬럼만) */
+.inquiries-index .board-table tbody tr td:nth-child(4) a {
+    color: #212529;
+    text-decoration: none;
+}
+
+.inquiries-index .board-table tbody tr td:nth-child(4) a:hover {
+    color: #212529;
+    text-decoration: underline;
+}
+
+/* 문의 회원 정보 섹션 */
+.inquiries-show .board-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.inquiries-show .board-form-row .board-form-col .board-form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.inquiries-show .board-form-row .board-form-col .board-form-group .board-form-label {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 0;
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.inquiries-show .board-form-row .board-form-col .board-form-group .board-form-control {
+    flex: 1;
+    background: #f8f9fa;
+}
+
+/* 문의 내용 읽기 전용 필드 */
+.inquiries-show .board-form-control[readonly] {
+    background: #f8f9fa;
+}
+
+/* Summernote 에디터 - 색상 선택 버튼의 드롭다운 화살표 크기 조정 */
+.inquiries-show .note-editor.note-toolbar .note-color.dropdown-toggle,
+.inquiries-show .note-popover .popover-content .note-color.dropdown-toggle {
+    width: auto !important;
+    min-width: 30px !important;
+    padding-left: 8px !important;
+    padding-right: 12px !important;
+}
+
+.inquiries-show .note-toolbar .note-btn-group .note-btn[data-event="foreColor"].dropdown-toggle::after,
+.inquiries-show .note-toolbar .note-btn-group .note-btn[data-event="backColor"].dropdown-toggle::after {
+    border-top-color: #333 !important;
+    border-top-width: 5px !important;
+    border-left-width: 5px !important;
+    border-right-width: 5px !important;
+    border-left-color: transparent !important;
+    border-right-color: transparent !important;
+    border-bottom: none !important;
+    position: relative !important;
+    top: 2px !important;
+    margin-left: 4px !important;
+}
