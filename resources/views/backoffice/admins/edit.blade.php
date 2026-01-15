@@ -52,24 +52,85 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="name">성명</label>
+                            <label for="name">성명 <span class="required">*</span></label>
                             <input type="text" id="name" name="name" value="{{ old('name', $admin->name) }}" required placeholder="성명을 입력하세요">
                         </div>
                         
                         <div class="form-group">
-                            <label for="contact">연락처</label>
-                            <input type="text" id="contact" name="contact" value="{{ old('contact', $admin->contact) }}" placeholder="연락처를 입력하세요">
+                            <label for="department">부서</label>
+                            <input type="text" id="department" name="department" value="{{ old('department', $admin->department) }}" placeholder="부서를 입력하세요">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="position">직위</label>
+                            <input type="text" id="position" name="position" value="{{ old('position', $admin->position) }}" placeholder="직위를 입력하세요">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contact">연락처 <span class="required">*</span></label>
+                            <input type="text" id="contact" name="contact" value="{{ old('contact', $admin->contact) }}" required placeholder="연락처를 입력하세요">
                         </div>
                         
                         <div class="form-group">
                             <label for="email">이메일</label>
-                            <input type="email" id="email" name="email" value="{{ old('email', $admin->email) }}" required placeholder="이메일을 입력하세요">
+                            <input type="email" id="email" name="email" value="{{ old('email', $admin->email) }}" placeholder="이메일을 입력하세요">
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h3>사용 여부</h3>
+                    <h3>관리자 등급 <span class="required">*</span></h3>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="role" value="super_admin" id="role_super_admin" @checked(old('role', $admin->role) == 'super_admin')>
+                            <span>총괄관리자</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="role" value="admin" id="role_admin" @checked(old('role', $admin->role) == 'admin')>
+                            <span>일반관리자</span>
+                        </label>
+                    </div>
+                    <div class="permission-notice">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            총괄관리자는 아래 모든 메뉴에 접근 가능합니다. 총괄관리자는 VIP 풀네임 확인이 가능합니다.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="form-section" id="admin-group-section">
+                    <h3>권한 설정 <span class="required">*</span></h3>
+                    @if($admin->isSuperAdmin())
+                        <div class="alert alert-info">
+                            <i class="fas fa-crown"></i>
+                            <strong>총괄관리자</strong><br>
+                            총괄관리자는 모든 메뉴에 자동으로 접근 권한이 부여됩니다. 권한 그룹 설정이 필요하지 않습니다.
+                        </div>
+                    @else
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="admin_group_id">권한 그룹</label>
+                                <select id="admin_group_id" name="admin_group_id">
+                                    <option value="">그룹을 선택하세요</option>
+                                    @foreach($groups as $group)
+                                        <option value="{{ $group->id }}" @selected(old('admin_group_id', $admin->admin_group_id) == $group->id)>
+                                            {{ $group->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="permission-notice">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                일반 관리자는 권한 그룹을 선택해야 합니다.
+                            </small>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="form-section">
+                    <h3>사용 여부 <span class="required">*</span></h3>
                     <div class="radio-group">
                         <label class="radio-label">
                             <input type="radio" name="is_active" value="1" @checked(old('is_active', $admin->is_active ? '1' : '0') == '1')>
@@ -80,31 +141,6 @@
                             <span>미사용</span>
                         </label>
                     </div>
-                </div>
-
-                <div class="form-section">
-                    <h3>권한 설정</h3>
-                    @if($admin->isSuperAdmin())
-                        <div class="alert alert-info">
-                            <i class="fas fa-crown"></i>
-                            <strong>슈퍼 관리자</strong><br>
-                            슈퍼 관리자는 모든 메뉴에 자동으로 접근 권한이 부여됩니다. 권한 그룹 설정이 필요하지 않습니다.
-                        </div>
-                    @else
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="admin_group_id">권한 그룹</label>
-                                <select id="admin_group_id" name="admin_group_id" required>
-                                    <option value="">그룹을 선택하세요</option>
-                                    @foreach($groups as $group)
-                                        <option value="{{ $group->id }}" @selected(old('admin_group_id', $admin->admin_group_id) == $group->id)>
-                                            {{ $group->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                    @endif
                 </div>
                 
                 <div class="form-actions">

@@ -4,6 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     initLoginIdCheck();
+    initAdminRoleToggle();
 });
 
 /**
@@ -118,5 +119,43 @@ function initLoginIdCheck() {
             }
         });
     }
+}
+
+/**
+ * 관리자 등급 선택에 따른 권한 그룹 섹션 제어
+ */
+function initAdminRoleToggle() {
+    const roleInputs = document.querySelectorAll('input[name="role"]');
+    const adminGroupSection = document.getElementById('admin-group-section');
+    const adminGroupSelect = document.getElementById('admin_group_id');
+
+    if (!roleInputs.length || !adminGroupSection) return;
+
+    function toggleAdminGroupSection() {
+        const selectedRole = document.querySelector('input[name="role"]:checked')?.value;
+        
+        if (selectedRole === 'super_admin') {
+            // 총괄관리자 선택 시 권한 그룹 섹션 숨김 및 선택 해제
+            adminGroupSection.style.display = 'none';
+            if (adminGroupSelect) {
+                adminGroupSelect.value = '';
+                adminGroupSelect.removeAttribute('required');
+            }
+        } else {
+            // 일반관리자 선택 시 권한 그룹 섹션 표시
+            adminGroupSection.style.display = 'block';
+            if (adminGroupSelect) {
+                adminGroupSelect.setAttribute('required', 'required');
+            }
+        }
+    }
+
+    // 초기 상태 설정
+    toggleAdminGroupSection();
+
+    // 라디오 버튼 변경 시
+    roleInputs.forEach(input => {
+        input.addEventListener('change', toggleAdminGroupSection);
+    });
 }
 

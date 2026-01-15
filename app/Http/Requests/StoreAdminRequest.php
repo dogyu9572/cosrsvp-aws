@@ -22,11 +22,12 @@ class StoreAdminRequest extends FormRequest
         return [
             'login_id' => 'nullable|string|max:255|unique:users,login_id',
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'nullable|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'department' => 'nullable|string|max:255',
             'position' => 'nullable|string|max:255',
-            'contact' => 'nullable|string|max:50',
+            'contact' => 'required|string|max:50',
+            'role' => 'required|in:super_admin,admin',
             'is_active' => 'boolean',
             'admin_group_id' => 'nullable|exists:admin_groups,id',
         ];

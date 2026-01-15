@@ -25,32 +25,50 @@ class AdminService
     {
         $query = User::whereIn('role', ['super_admin', 'admin']);
         
-        // 이름 검색
-        if ($request->filled('name')) {
-            $query->where('name', 'like', '%' . $request->name . '%');
-        }
-        
-        // 이메일 검색
-        if ($request->filled('email')) {
-            $query->where('email', 'like', '%' . $request->email . '%');
-        }
-        
-        // 권한 필터
+        // 관리자 등급 필터
         if ($request->filled('role')) {
             $query->where('role', $request->role);
         }
         
-        // 상태 필터
+        // 사용여부 필터
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active);
         }
         
-        // 등록일 필터
-        if ($request->filled('created_from')) {
-            $query->whereDate('created_at', '>=', $request->created_from);
-        }
-        if ($request->filled('created_to')) {
-            $query->whereDate('created_at', '<=', $request->created_to);
+        // 검색 필터 (검색 타입별)
+        if ($request->filled('keyword')) {
+            $keyword = $request->keyword;
+            $searchType = $request->get('search_type', '');
+            
+            if (empty($searchType)) {
+                // 전체 검색: 성명, 부서, 직위, 연락처, 이메일
+                $query->where(function($q) use ($keyword) {
+                    $q->where('name', 'like', '%' . $keyword . '%')
+                      ->orWhere('department', 'like', '%' . $keyword . '%')
+                      ->orWhere('position', 'like', '%' . $keyword . '%')
+                      ->orWhere('contact', 'like', '%' . $keyword . '%')
+                      ->orWhere('email', 'like', '%' . $keyword . '%');
+                });
+            } else {
+                // 특정 필드 검색
+                switch ($searchType) {
+                    case 'name':
+                        $query->where('name', 'like', '%' . $keyword . '%');
+                        break;
+                    case 'department':
+                        $query->where('department', 'like', '%' . $keyword . '%');
+                        break;
+                    case 'position':
+                        $query->where('position', 'like', '%' . $keyword . '%');
+                        break;
+                    case 'contact':
+                        $query->where('contact', 'like', '%' . $keyword . '%');
+                        break;
+                    case 'email':
+                        $query->where('email', 'like', '%' . $keyword . '%');
+                        break;
+                }
+            }
         }
         
         // 목록 개수 설정
@@ -68,11 +86,11 @@ class AdminService
         $adminData = [
             'login_id' => $data['login_id'] ?? null,
             'name' => $data['name'],
-            'email' => $data['email'],
+            'email' => $data['email'] ?? null,
             'password' => Hash::make($data['password']),
-            'role' => 'admin',
-            'admin_group_id' => $data['admin_group_id'] ?? null,
-            'is_active' => true,
+            'role' => $data['role'] ?? 'admin',
+            'admin_group_id' => ($data['role'] ?? 'admin') === 'super_admin' ? null : ($data['admin_group_id'] ?? null),
+            'is_active' => $data['is_active'] ?? true,
             'department' => $data['department'] ?? null,
             'position' => $data['position'] ?? null,
             'contact' => $data['contact'] ?? null,
@@ -96,8 +114,10 @@ class AdminService
     {
         $admin->login_id = $data['login_id'] ?? null;
         $admin->name = $data['name'];
-        $admin->email = $data['email'];
-        $admin->admin_group_id = $data['admin_group_id'] ?? null;
+        $admin->email = $data['email'] ?? null;
+        $admin->role = $data['role'] ?? $admin->role;
+        $admin->admin_group_id = ($data['role'] ?? $admin->role) === 'super_admin' ? null : ($data['admin_group_id'] ?? $admin->admin_group_id);
+        $admin->is_active = $data['is_active'] ?? $admin->is_active;
         $admin->department = $data['department'] ?? null;
         $admin->position = $data['position'] ?? null;
         $admin->contact = $data['contact'] ?? null;

@@ -37,14 +37,15 @@ class UpdateAdminRequest extends FormRequest
             ],
             'name' => 'required|string|max:255',
             'email' => [
-                'required',
+                'nullable',
                 'email',
                 Rule::unique('users')->ignore($adminId)
             ],
             'password' => 'nullable|string|min:8|confirmed',
             'department' => 'nullable|string|max:255',
             'position' => 'nullable|string|max:255',
-            'contact' => 'nullable|string|max:50',
+            'contact' => 'required|string|max:50',
+            'role' => 'required|in:super_admin,admin',
             'is_active' => 'boolean',
             'admin_group_id' => 'nullable|exists:admin_groups,id',
         ];

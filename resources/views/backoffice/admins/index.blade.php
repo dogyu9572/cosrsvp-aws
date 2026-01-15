@@ -40,43 +40,34 @@
                     <!-- 첫 번째 줄 -->
                     <div class="filter-row">
                         <div class="filter-group">
-                            <label for="name" class="filter-label">이름</label>
-                            <input type="text" id="name" name="name" class="filter-input"
-                                placeholder="이름을 입력하세요" value="{{ request('name') }}">
-                        </div>
-                        <div class="filter-group">
-                            <label for="email" class="filter-label">이메일</label>
-                            <input type="text" id="email" name="email" class="filter-input"
-                                placeholder="이메일을 입력하세요" value="{{ request('email') }}">
-                        </div>
-                        <div class="filter-group">
-                            <label for="role" class="filter-label">권한</label>
+                            <label for="role" class="filter-label">관리자 등급</label>
                             <select id="role" name="role" class="filter-select">
                                 <option value="">전체</option>
-                                <option value="super_admin" @selected(request('role') == 'super_admin')>슈퍼관리자</option>
-                                <option value="admin" @selected(request('role') == 'admin')>관리자</option>
+                                <option value="super_admin" @selected(request('role') == 'super_admin')>총괄관리자</option>
+                                <option value="admin" @selected(request('role') == 'admin')>일반관리자</option>
                             </select>
                         </div>
                         <div class="filter-group">
-                            <label for="is_active" class="filter-label">상태</label>
+                            <label for="is_active" class="filter-label">사용여부</label>
                             <select id="is_active" name="is_active" class="filter-select">
                                 <option value="">전체</option>
-                                <option value="1" @selected(request('is_active') == '1')>활성화</option>
-                                <option value="0" @selected(request('is_active') == '0')>비활성화</option>
+                                <option value="1" @selected(request('is_active') == '1')>사용</option>
+                                <option value="0" @selected(request('is_active') == '0')>미사용</option>
                             </select>
                         </div>
-                    </div>
-                    
-                    <!-- 두 번째 줄 -->
-                    <div class="filter-row">
                         <div class="filter-group">
-                            <label for="created_from" class="filter-label">등록일</label>
-                            <div class="date-range">
-                                <input type="date" id="created_from" name="created_from" class="filter-input"
-                                    value="{{ request('created_from') }}">
-                                <span class="date-separator">~</span>
-                                <input type="date" id="created_to" name="created_to" class="filter-input"
-                                    value="{{ request('created_to') }}">
+                            <label for="search_type" class="filter-label">검색</label>
+                            <div class="search-input-wrapper">
+                                <select id="search_type" name="search_type" class="filter-select search-type-select">
+                                    <option value="">전체</option>
+                                    <option value="name" @selected(request('search_type') == 'name')>성명</option>
+                                    <option value="department" @selected(request('search_type') == 'department')>부서</option>
+                                    <option value="position" @selected(request('search_type') == 'position')>직위</option>
+                                    <option value="contact" @selected(request('search_type') == 'contact')>연락처</option>
+                                    <option value="email" @selected(request('search_type') == 'email')>이메일</option>
+                                </select>
+                                <input type="text" id="keyword" name="keyword" class="filter-input search-keyword-input"
+                                    placeholder="검색어를 입력하세요" value="{{ request('keyword') }}">
                             </div>
                         </div>
                         <div class="filter-group">
@@ -122,14 +113,15 @@
                                     <input type="checkbox" id="select-all" class="form-check-input">
                                 </th>
                                 <th>번호</th>
-                                <th>아이디</th>
+                                <th>관리자 등급</th>
+                                <th>ID</th>
                                 <th>성명</th>
-                                <th>이메일</th>
+                                <th>부서</th>
+                                <th>직위</th>
                                 <th>연락처</th>
-                                <th>권한</th>
-                                <th>상태</th>
+                                <th>이메일</th>
+                                <th>사용여부</th>
                                 <th>등록일</th>
-                                <th>최종 접속일</th>
                                 <th>관리</th>
                             </tr>
                         </thead>
@@ -142,36 +134,27 @@
                                         @endif
                                     </td>
                                     <td>{{ $admins->total() - ($admins->currentPage() - 1) * $admins->perPage() - $loop->index }}</td>
+                                    <td>
+                                        @if($admin->role === 'super_admin')
+                                            총괄관리자
+                                        @else
+                                            일반관리자
+                                        @endif
+                                    </td>
                                     <td>{{ $admin->login_id ?: '-' }}</td>
                                     <td>{{ $admin->name }}</td>
-                                    <td>{{ $admin->email }}</td>
+                                    <td>{{ $admin->department ?: '-' }}</td>
+                                    <td>{{ $admin->position ?: '-' }}</td>
                                     <td>{{ $admin->contact ?: '-' }}</td>
-                                    <td>
-                                        <span class="role-badge role-{{ $admin->role }}">
-                                            @switch($admin->role)
-                                                @case('super_admin')
-                                                    슈퍼관리자
-                                                    @break
-                                                @case('admin')
-                                                    관리자
-                                                    @break
-                                                @default
-                                                    {{ $admin->role }}
-                                            @endswitch
-                                        </span>
-                                    </td>
+                                    <td>{{ $admin->email ?: '-' }}</td>
                                     <td>
                                         <span class="status-badge {{ $admin->is_active ? 'status-active' : 'status-inactive' }}">
-                                            {{ $admin->is_active ? '활성화' : '비활성화' }}
+                                            {{ $admin->is_active ? '사용' : '미사용' }}
                                         </span>
                                     </td>
-                                    <td>{{ $admin->created_at->format('Y-m-d') }}</td>
-                                    <td>{{ $admin->last_login_at ? $admin->last_login_at->format('Y-m-d') : '-' }}</td>
+                                    <td>{{ $admin->created_at->format('Y.m.d') }}</td>
                                     <td>
                                         <div class="board-btn-group">
-                                            <a href="{{ route('backoffice.admins.show', $admin) }}" class="btn btn-info btn-sm">
-                                                <i class="fas fa-eye"></i> 보기
-                                            </a>
                                             <a href="{{ route('backoffice.admins.edit', $admin) }}" class="btn btn-primary btn-sm">
                                                 <i class="fas fa-edit"></i> 수정
                                             </a>
@@ -201,20 +184,21 @@
                                     <input type="checkbox" id="select-all" class="form-check-input" disabled>
                                 </th>
                                 <th>번호</th>
-                                <th>아이디</th>
+                                <th>관리자 등급</th>
+                                <th>ID</th>
                                 <th>성명</th>
-                                <th>이메일</th>
+                                <th>부서</th>
+                                <th>직위</th>
                                 <th>연락처</th>
-                                <th>권한</th>
-                                <th>상태</th>
+                                <th>이메일</th>
+                                <th>사용여부</th>
                                 <th>등록일</th>
-                                <th>최종 접속일</th>
                                 <th>관리</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="11" class="text-center">등록된 관리자가 없습니다.</td>
+                                <td colspan="12" class="text-center">등록된 관리자가 없습니다.</td>
                             </tr>
                         </tbody>
                     </table>

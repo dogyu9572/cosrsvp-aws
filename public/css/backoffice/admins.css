@@ -6,6 +6,12 @@
     vertical-align: middle;
 }
 
+/* 필수 항목 표시 */
+.admins-page .required {
+    color: #dc3545;
+    margin-left: 3px;
+}
+
 /* 헤더 버튼 그룹 - backoffice-common.css의 board-page-header 스타일 사용 */
 
 /* disabled 상태에서도 버튼 색상 유지 */
@@ -92,6 +98,16 @@
     box-shadow: 0 1px 4px rgba(52, 144, 220, 0.2);
 }
 
+.filter-title,
+.list-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #333;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
 .filter-form {
     width: 100%;
 }
@@ -157,6 +173,36 @@
 .filter-buttons .btn {
     font-size: 0.9rem;
     padding: 0.5rem 1rem;
+}
+
+.search-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.search-type-select {
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.search-keyword-input {
+    flex: 1;
+}
+
+/* 목록 섹션 스타일 */
+.admin-list-section {
+    margin-top: 2rem;
+}
+
+.list-info {
+    margin-bottom: 15px;
+    padding: 10px 0;
+}
+
+.list-actions {
+    margin-top: 1.5rem;
+    text-align: right;
 }
 
 /* 목록 헤더 스타일 */
