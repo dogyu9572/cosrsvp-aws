@@ -153,6 +153,24 @@ class Member extends Model
     }
 
     /**
+     * 주소록과의 관계 (Many-to-Many)
+     */
+    public function mailAddressBooks(): BelongsToMany
+    {
+        return $this->belongsToMany(MailAddressBook::class, 'mail_address_book_members', 'member_id', 'address_book_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * 주소록과의 관계 (Many-to-Many)
+     */
+    public function addressBooks(): BelongsToMany
+    {
+        return $this->belongsToMany(MailAddressBook::class, 'mail_address_book_members', 'member_id', 'address_book_id')
+            ->withTimestamps();
+    }
+
+    /**
      * 프로젝트 기수로 필터링
      */
     public function scopeByProjectTerm($query, $projectTermId)

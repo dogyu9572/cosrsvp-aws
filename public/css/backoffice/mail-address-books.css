@@ -1,0 +1,22 @@
+/* 주소록 관리 스타일 */
+
+/* 엑셀 파일 업로드 영역 - 높이 최소화 (아이콘 제거, 한 줄 텍스트) */
+.mail-address-books .board-file-input-wrapper {
+    max-width: 100%;
+}
+
+.mail-address-books .board-file-input-content {
+    padding: 0.5rem 1rem;
+    min-height: auto;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.mail-address-books .board-file-input-text {
+    font-size: 0.875rem;
+    margin-bottom: 0;
+    text-align: center;
+    line-height: 1.5;
+}

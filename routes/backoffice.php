@@ -348,4 +348,34 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
         'names' => 'backoffice.member-notes',
         'parameters' => ['member-notes' => 'memberNote']
     ]);
+
+    // -------------------------------------------------------------------------
+    // 메일 관리
+    // -------------------------------------------------------------------------
+
+    // 주소록 관리
+    Route::get('mail-address-books/excel-sample', [App\Http\Controllers\Backoffice\MailAddressBookController::class, 'downloadExcelSample'])
+        ->name('backoffice.mail-address-books.excel-sample');
+    Route::resource('mail-address-books', App\Http\Controllers\Backoffice\MailAddressBookController::class, [
+        'names' => 'backoffice.mail-address-books'
+    ]);
+    Route::post('mail-address-books/{addressBook}/add-contact', [App\Http\Controllers\Backoffice\MailAddressBookController::class, 'addContact'])
+        ->name('backoffice.mail-address-books.add-contact');
+    Route::put('mail-address-books/{addressBook}/update-contact/{contact}', [App\Http\Controllers\Backoffice\MailAddressBookController::class, 'updateContact'])
+        ->name('backoffice.mail-address-books.update-contact');
+    Route::delete('mail-address-books/{addressBook}/delete-contact/{contact}', [App\Http\Controllers\Backoffice\MailAddressBookController::class, 'deleteContact'])
+        ->name('backoffice.mail-address-books.delete-contact');
+    Route::post('mail-address-books/{addressBook}/add-member', [App\Http\Controllers\Backoffice\MailAddressBookController::class, 'addMember'])
+        ->name('backoffice.mail-address-books.add-member');
+    Route::delete('mail-address-books/{addressBook}/remove-member/{member}', [App\Http\Controllers\Backoffice\MailAddressBookController::class, 'removeMember'])
+        ->name('backoffice.mail-address-books.remove-member');
+    Route::post('mail-address-books/{addressBook}/import-excel', [App\Http\Controllers\Backoffice\MailAddressBookController::class, 'importExcel'])
+        ->name('backoffice.mail-address-books.import-excel');
+
+    // 메일발송 관리
+    Route::resource('mails', App\Http\Controllers\Backoffice\MailController::class, [
+        'names' => 'backoffice.mails'
+    ]);
+    Route::post('mails/get-members-by-filters', [App\Http\Controllers\Backoffice\MailController::class, 'getMembersByFilters'])
+        ->name('backoffice.mails.get-members-by-filters');
 });
