@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Member;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
@@ -28,22 +30,35 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'login_id' => 'required|string',
             'password' => 'required|string',
             'remember' => 'boolean',
         ]);
 
-        if (Auth::attempt([
-            'email' => $request->email,
-            'password' => $request->password
-        ], $request->boolean('remember'))) {
-            $request->session()->regenerate();
-            return redirect()->intended('/');
+        // login_id로 회원 찾기
+        $member = Member::where('login_id', $request->login_id)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$member) {
+            throw ValidationException::withMessages([
+                'login_id' => [trans('auth.failed')],
+            ]);
         }
 
-        throw ValidationException::withMessages([
-            'email' => [trans('auth.failed')],
-        ]);
+        // 비밀번호 확인
+        if (!Hash::check($request->password, $member->password)) {
+            throw ValidationException::withMessages([
+                'login_id' => [trans('auth.failed')],
+            ]);
+        }
+
+        // 세션에 회원 정보 저장
+        $request->session()->put('member_id', $member->id);
+        $request->session()->put('member', $member->toArray());
+        $request->session()->regenerate();
+
+        return redirect()->intended('/');
     }
 
     /**
@@ -54,8 +69,8 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
-
+        $request->session()->forget('member_id');
+        $request->session()->forget('member');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

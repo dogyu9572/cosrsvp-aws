@@ -18,14 +18,15 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // 팝업 표시 (일반 팝업용)
 Route::get('/popup/{popup}', [PopupController::class, 'showPopup'])->name('popup.show');
 
+// 로그인 (사용자 페이지)
+Route::get('/login', [LoginController::class, 'showLoginForm'])
+    ->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->name('logout');
+
 // 인증 관련 라우트
 Route::prefix('auth')->name('auth.')->group(function () {
-    // 로그인
-    Route::get('/login', [LoginController::class, 'showLoginForm'])
-        ->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
-    Route::post('/logout', [LoginController::class, 'logout'])
-        ->name('logout');
 
     // 회원가입
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])
