@@ -28,8 +28,8 @@
                     foreach($menu->children as $child) {
                         if($child->url && !empty(trim($child->url, '/'))) {
                             $childPath = trim($child->url, '/');
-                            // 정확한 경로 매칭만 사용 (하위 경로는 제외)
-                            if($currentPath === $childPath) {
+                            // 정확한 경로 매칭 또는 하위 경로 매칭
+                            if($currentPath === $childPath || strpos($currentPath, $childPath . '/') === 0) {
                                 $hasActiveChild = true;
                                 break;
                             }
@@ -40,6 +40,19 @@
                 // 자식 메뉴가 활성화되어 있다면 부모도 활성화
                 if($hasActiveChild) {
                     $isActive = true;
+                }
+                
+                // 회원 관리 메뉴 하드코딩 예외처리: member-notes, member-alerts 경로에서 활성화
+                $menuPath = trim($menu->url ?? '', '/');
+                $menuName = $menu->name ?? '';
+                // 메뉴 URL에 "members"가 포함되거나 메뉴 이름에 "회원"이 포함된 경우
+                if((!empty($menuPath) && (strpos($menuPath, 'members') !== false || $menuPath === 'backoffice/members')) || 
+                   (!empty($menuName) && strpos($menuName, '회원') !== false)) {
+                    if(strpos($currentPath, 'backoffice/member-notes') === 0 || 
+                       strpos($currentPath, 'backoffice/member-alerts') === 0) {
+                        $isActive = true;
+                        $hasActiveChild = true;
+                    }
                 }
             @endphp
             <li class="{{ $isActive ? 'active' : '' }}">
@@ -64,7 +77,15 @@
                                 @if($child->is_active)
                                     @php
                                         $childPath = trim($child->url, '/');
-                                        $isChildActive = !empty($childPath) && $currentPath === $childPath;
+                                        $isChildActive = !empty($childPath) && ($currentPath === $childPath || strpos($currentPath, $childPath . '/') === 0);
+                                        
+                                        // 회원 관리 하위 메뉴 하드코딩 예외처리: member-notes, member-alerts 경로에서 활성화
+                                        if (!$isChildActive && ($childPath === 'backoffice/members' || strpos($childPath, 'backoffice/members') !== false)) {
+                                            if (strpos($currentPath, 'backoffice/member-notes') === 0 || 
+                                                strpos($currentPath, 'backoffice/member-alerts') === 0) {
+                                                $isChildActive = true;
+                                            }
+                                        }
                                     @endphp
                                     <li class="{{ $isChildActive ? 'active' : '' }}">
                                         <a href="{{ is_string($child->url) ? url($child->url) : $child->url }}">

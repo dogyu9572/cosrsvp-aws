@@ -1,0 +1,157 @@
+/* 회원 관리 스타일 - 게시판 관리 페이지와 동일한 스타일 사용 */
+/* boards.css의 스타일을 재사용하므로 추가 CSS 최소화 */
+
+/* 회원 생성/수정 페이지 - inquiries와 동일한 두 컬럼 레이아웃 */
+.board-container .board-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 5px;
+}
+
+/* 프로젝트 기수 정보 5개 컬럼 레이아웃 */
+.board-container .board-form-row[style*="grid-template-columns: repeat(5, 1fr)"] {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 10px;
+}
+
+.board-container .board-form-row .board-form-col .board-form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.board-container .board-form-row .board-form-col .board-form-group .board-form-label {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 0;
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.board-container .board-form-row .board-form-col .board-form-group .board-form-control {
+    flex: 1;
+}
+
+/* 성별 라디오 버튼도 한 줄에 배치 */
+.board-container .board-form-row .board-form-col .board-form-group > div[style*="display: flex"] {
+    flex: 1;
+}
+
+/* 회원 생성/수정 페이지 전체 여백 줄이기 */
+.members-page .board-form-group,
+.board-container .board-form-group {
+    margin-bottom: 10px;
+}
+
+.members-page .board-form-label,
+.board-container .board-form-label {
+    margin-bottom: 5px;
+}
+
+.form-section {
+    margin-bottom: 30px;
+}
+
+.form-section h3 {
+    margin-bottom: 20px;
+    font-weight: bold;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-weight: 500;
+}
+
+.form-group .required {
+    color: red;
+}
+
+.radio-group,
+.checkbox-group {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.radio-label,
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-normal {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-urgent {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.status-caution {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.status-submitted {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-not_submitted {
+    background-color: #fafafa;
+    color: #616161;
+}
+
+.status-supplement_requested {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.status-resubmitted {
+    background-color: #e1f5fe;
+    color: #0277bd;
+}
+
+/* 관리자 작성 / 회원 작성 라벨 스타일 */
+.form-category-label {
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin: 15px 0 10px 0;
+    padding: 0;
+    border: none;
+    background: none;
+    display: block;
+    width: 100%;
+}

@@ -7,7 +7,7 @@
 /.fleet
 /.idea
 /.vscode
-
+/.dbclient
 # 환경 설정 파일
 .env
 .env.backup
@@ -117,3 +117,4 @@ docs/
 # 업로드 파일 (개발 환경)
 # storage/app/public/uploads/*
 # !storage/app/public/uploads/.gitkeep
+

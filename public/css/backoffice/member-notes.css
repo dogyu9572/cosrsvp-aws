@@ -1,0 +1,25 @@
+/* 회원비고 관리 스타일 - 게시판 관리 페이지와 동일한 스타일 사용 */
+/* boards.css의 스타일을 재사용하므로 추가 CSS 최소화 */
+
+/* 상태 배지 스타일 */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-normal {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-urgent {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.status-caution {
+    background-color: #fff3e0;
+    color: #e65100;
+}

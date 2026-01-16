@@ -241,6 +241,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 회원 관리 메뉴 하드코딩 예외처리: member-notes, member-alerts 경로에서 활성화
+    if (currentPath.startsWith('/backoffice/member-notes') || currentPath.startsWith('/backoffice/member-alerts')) {
+        const allMenuItems = document.querySelectorAll('.sidebar-menu > li');
+        allMenuItems.forEach(function(menuItem) {
+            const menuLink = menuItem.querySelector('a');
+            if (menuLink) {
+                const url = new URL(menuLink.href);
+                const linkPath = url.pathname;
+                const menuName = menuLink.querySelector('span')?.textContent || '';
+                
+                // 메뉴 URL에 "members"가 포함되거나 메뉴 이름에 "회원"이 포함된 경우
+                if ((linkPath.includes('members') || linkPath === '/backoffice/members') || 
+                    menuName.includes('회원')) {
+                    menuItem.classList.add('active');
+                    const submenuLink = menuItem.querySelector('.has-submenu');
+                    if (submenuLink) {
+                        submenuLink.classList.add('open');
+                    }
+                    
+                    // 하위 메뉴 "회원 관리"도 활성화
+                    const submenu = menuItem.querySelector('.sidebar-submenu');
+                    if (submenu) {
+                        const submenuItems = submenu.querySelectorAll('li');
+                        submenuItems.forEach(function(subItem) {
+                            const subLink = subItem.querySelector('a');
+                            if (subLink) {
+                                const subUrl = new URL(subLink.href);
+                                const subLinkPath = subUrl.pathname;
+                                // 하위 메뉴 URL이 /backoffice/members인 경우 활성화
+                                if (subLinkPath === '/backoffice/members' || subLinkPath.includes('members')) {
+                                    subItem.classList.add('active');
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        });
+    }
+
     // 모바일 디바이스 확인
     function isMobile() {
         return window.innerWidth <= 768;

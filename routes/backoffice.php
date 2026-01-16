@@ -317,4 +317,35 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
         ->name('backoffice.inquiries.reply');
     Route::delete('inquiries/{id}', [InquiryController::class, 'destroy'])
         ->name('backoffice.inquiries.destroy');
+
+    // -------------------------------------------------------------------------
+    // 회원 관리
+    // -------------------------------------------------------------------------
+
+    // 회원 관리
+    Route::post('members/reset-password/{member}', [App\Http\Controllers\Backoffice\MemberController::class, 'resetPassword'])
+        ->name('backoffice.members.reset-password');
+    Route::post('members/send-email', [App\Http\Controllers\Backoffice\MemberController::class, 'sendEmail'])
+        ->name('backoffice.members.send-email');
+    Route::get('members/get-by-project-term', [App\Http\Controllers\Backoffice\MemberController::class, 'getMembersByProjectTerm'])
+        ->name('backoffice.members.get-by-project-term');
+    // 파일 관련 라우트는 resource 라우트보다 먼저 정의해야 함
+    Route::get('members/{member}/download-ticket-file', [App\Http\Controllers\Backoffice\MemberController::class, 'downloadTicketFile'])
+        ->name('backoffice.members.download-ticket-file');
+    Route::post('members/{member}/delete-ticket-file', [App\Http\Controllers\Backoffice\MemberController::class, 'deleteTicketFile'])
+        ->name('backoffice.members.delete-ticket-file');
+    Route::resource('members', App\Http\Controllers\Backoffice\MemberController::class, [
+        'names' => 'backoffice.members'
+    ]);
+
+    // 알림 관리
+    Route::resource('member-alerts', App\Http\Controllers\Backoffice\AlertController::class, [
+        'names' => 'backoffice.alerts'
+    ]);
+
+    // 회원비고 관리
+    Route::resource('member-notes', App\Http\Controllers\Backoffice\MemberNoteController::class, [
+        'names' => 'backoffice.member-notes',
+        'parameters' => ['member-notes' => 'memberNote']
+    ]);
 });
