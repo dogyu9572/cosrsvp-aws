@@ -20,8 +20,11 @@ class HomeController extends Controller
         // gallerys 게시판 최신글 4개
         $galleryPosts = $this->getLatestPosts('gallerys', 4);
         
-        // notices 게시판 최신글 4개  
-        $noticePosts = $this->getLatestPosts('notices', 4);
+        // top-notices 게시판 최신글 1개 (띠공지)
+        $topNotice = $this->getLatestPosts('top-notices', 1)->first();
+        
+        // notices 게시판 최신글 3개  
+        $noticePosts = $this->getLatestPosts('notices', 3);
         
         // 활성화된 팝업 조회 (쿠키 확인하여 숨겨진 팝업 제외)
         $popups = Popup::select('id', 'title', 'popup_type', 'popup_display_type', 'popup_image', 'popup_content', 'url', 'url_target', 'width', 'height', 'position_top', 'position_left')
@@ -41,7 +44,7 @@ class HomeController extends Controller
             ->ordered()
             ->get();
         
-        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'noticePosts', 'popups', 'banners'));
+        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners'));
     }
     
     /**
@@ -63,9 +66,8 @@ class HomeController extends Controller
             }
             
             return DB::table($tableName)
-                ->select('id', 'title', 'created_at', 'thumbnail', 'category')
-                ->where('deleted_at', null)
-                ->where('category', '국문')
+                ->select('id', 'title', 'content', 'created_at', 'thumbnail', 'category')
+                ->whereNull('deleted_at')
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
                 ->get()
@@ -73,6 +75,7 @@ class HomeController extends Controller
                     return (object) [
                         'id' => $post->id,
                         'title' => $post->title,
+                        'content' => $post->content ?? '',
                         'created_at' => $post->created_at,
                         'thumbnail' => $post->thumbnail,
                         'url' => route('backoffice.board-posts.show', [$boardSlug, $post->id])
