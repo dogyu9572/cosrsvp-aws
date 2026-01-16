@@ -26,15 +26,15 @@ $memberAffiliation = $member['affiliation'] ?? 'Basic Medicine_Korea University'
 		<div class="scroll">
 			<div class="gnb">
 				<div class="menu gnb0 {{ ($gNum ?? '') == 'main' ? 'on' : '' }}"><a href="{{ route('home') }}">Dashboard</a></div>
-				<div class="menu gnb2 {{ ($gNum ?? '') == '02' ? 'on' : '' }}"><a href="{{ route('home') }}">Schedule</a></div>
+				<div class="menu gnb2 {{ ($gNum ?? '') == '02' ? 'on' : '' }}"><a href="{{ route('schedule') }}">Schedule</a></div>
 				<div class="menu gnb3 {{ ($gNum ?? '') == '03' ? 'on' : '' }}"><a href="{{ route('home') }}">Map</a></div>
-				<div class="menu gnb4 {{ ($gNum ?? '') == '04' ? 'on' : '' }}"><a href="{{ route('home') }}">Notice</a></div>
-				<div class="menu gnb5 {{ ($gNum ?? '') == '05' ? 'on' : '' }}"><a href="{{ route('home') }}">Gallery</a></div>
+				<div class="menu gnb4 {{ ($gNum ?? '') == '04' ? 'on' : '' }}"><a href="{{ route('notices') }}">Notice</a></div>
+				<div class="menu gnb5 {{ ($gNum ?? '') == '05' ? 'on' : '' }}"><a href="{{ route('gallery') }}">Gallery</a></div>
 				<div class="menu gnb6 {{ ($gNum ?? '') == '06' ? 'on' : '' }}"><a href="{{ route('home') }}">Latest News</a></div>
-				<div class="menu gnb7 {{ ($gNum ?? '') == '07' ? 'on' : '' }}"><a href="{{ route('home') }}">Contact Us<i></i></a>
+				<div class="menu gnb7 {{ ($gNum ?? '') == '07' ? 'on' : '' }}"><a href="{{ route('inquiries') }}">Contact Us<i></i></a>
 					<div class="snb">
-						<a href="{{ route('home') }}" class="{{ (($gNum ?? '') == '07' && ($sNum ?? '') == '01') ? 'on' : '' }}">Contact Us</a>
-						<a href="{{ route('home') }}" class="{{ (($gNum ?? '') == '07' && ($sNum ?? '') == '02') ? 'on' : '' }}">FAQ</a>
+						<a href="{{ route('inquiries') }}" class="{{ (($gNum ?? '') == '07' && ($sNum ?? '') == '01') ? 'on' : '' }}">Contact Us</a>
+						<a href="{{ route('faq') }}" class="{{ (($gNum ?? '') == '07' && ($sNum ?? '') == '02') ? 'on' : '' }}">FAQ</a>
 					</div>
 				</div>
 				<div class="menu gnb8 {{ ($gNum ?? '') == '08' ? 'on' : '' }}"><a href="{{ route('home') }}">MY PAGE<i></i></a>
@@ -68,3 +68,22 @@ $memberAffiliation = $member['affiliation'] ?? 'Basic Medicine_Korea University'
 	</div>
 	
 </div>
+
+@push('scripts')
+<script>
+$(document).ready(function(){
+	// 서브메뉴 토글 (2차 메뉴)
+	$(".header .gnb .menu > a").click(function(e){
+		var $menu = $(this).parent(".menu");
+		var $snb = $menu.find(".snb");
+		
+		// 서브메뉴가 있는 경우에만 토글
+		if ($snb.length > 0) {
+			e.preventDefault();
+			$snb.stop(false,true).slideToggle("fast");
+			$menu.stop(false,true).toggleClass("open").siblings().removeClass("open").removeClass("on").children(".snb").slideUp("fast");
+		}
+	});
+});
+</script>
+@endpush

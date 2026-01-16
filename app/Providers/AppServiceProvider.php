@@ -93,14 +93,32 @@ class AppServiceProvider extends ServiceProvider
         // 쿼리 로깅 활성화 (디버깅용)
         if (config('app.debug')) {
             DB::listen(function ($query) {
-                Log::info(
-                    'SQL 쿼리 실행',
-                    [
-                        'sql' => $query->sql,
-                        'bindings' => $query->bindings,
-                        'time' => $query->time
-                    ]
-                );
+                // 로깅 제외할 테이블 목록
+                $excludedTables = [
+                    'daily_visitor_stats',
+                    'visitor_logs',
+                    'sessions',
+                ];
+                
+                // 제외할 테이블이 포함된 쿼리는 로깅하지 않음
+                $shouldLog = true;
+                foreach ($excludedTables as $table) {
+                    if (stripos($query->sql, $table) !== false) {
+                        $shouldLog = false;
+                        break;
+                    }
+                }
+                
+                if ($shouldLog) {
+                    Log::info(
+                        'SQL 쿼리 실행',
+                        [
+                            'sql' => $query->sql,
+                            'bindings' => $query->bindings,
+                            'time' => $query->time
+                        ]
+                    );
+                }
             });
         }
     }

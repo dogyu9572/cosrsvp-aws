@@ -1,6 +1,6 @@
 <div class="mobile_foot mo_vw">
 	<a href="{{ route('home') }}" class="i1 {{ ($gNum ?? '') == 'main' ? 'on' : '' }}">Dashboard</a>
-	<a href="{{ route('home') }}" class="i2 {{ ($gNum ?? '') == '02' ? 'on' : '' }}">Schedule</a>
+	<a href="{{ route('schedule') }}" class="i2 {{ ($gNum ?? '') == '02' ? 'on' : '' }}">Schedule</a>
 	<a href="{{ route('home') }}" class="i3 {{ ($gNum ?? '') == '03' ? 'on' : '' }}">Map</a>
 	<a href="{{ route('home') }}" class="i4 {{ (($gNum ?? '') == '08' && ($sNum ?? '') == '01') ? 'on' : '' }}">My Page</a>
 </div>

@@ -6,6 +6,11 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\NoticeController;
+use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\FaqController;
+use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\Backoffice\PopupController;
 
 // =============================================================================
@@ -14,6 +19,26 @@ use App\Http\Controllers\Backoffice\PopupController;
 
 // 메인 페이지
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// 스케줄 페이지
+Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule');
+
+// 공지사항 페이지
+Route::get('/notices', [NoticeController::class, 'index'])->name('notices');
+Route::get('/notices/{id}', [NoticeController::class, 'show'])->name('notices.show');
+
+// 갤러리 페이지
+Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery');
+Route::get('/gallery/{id}', [GalleryController::class, 'show'])->name('gallery.show');
+
+// FAQ 페이지
+Route::get('/faq', [FaqController::class, 'index'])->name('faq');
+
+// 문의사항 페이지
+Route::get('/inquiries', [InquiryController::class, 'index'])->name('inquiries');
+Route::get('/inquiries/create', [InquiryController::class, 'create'])->name('inquiries.create');
+Route::post('/inquiries', [InquiryController::class, 'store'])->name('inquiries.store');
+Route::get('/inquiries/{id}', [InquiryController::class, 'show'])->name('inquiries.show');
 
 // 팝업 표시 (일반 팝업용)
 Route::get('/popup/{popup}', [PopupController::class, 'showPopup'])->name('popup.show');
