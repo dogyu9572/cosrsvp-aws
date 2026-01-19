@@ -14,6 +14,9 @@ use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\FindIdController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AlarmController;
+use App\Http\Controllers\MapController;
+use App\Http\Controllers\PrivacyPolicyController;
+use App\Http\Controllers\TermsController;
 use App\Http\Controllers\Backoffice\PopupController;
 
 // =============================================================================
@@ -25,6 +28,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // 스케줄 페이지
 Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule');
+
+// 맵 페이지
+Route::get('/map', [MapController::class, 'index'])->name('map');
 
 // 공지사항 페이지
 Route::get('/notices', [NoticeController::class, 'index'])->name('notices');
@@ -69,6 +75,16 @@ Route::post('/mypage', [UserController::class, 'update'])->name('mypage.update')
 // 알람 페이지 (로그인 필수)
 Route::get('/alarms', [AlarmController::class, 'index'])->name('alarms');
 Route::get('/alarms/{id}', [AlarmController::class, 'show'])->name('alarms.show');
+
+// 환율 API
+Route::get('/api/exchange-rates', [HomeController::class, 'getExchangeRates'])->name('api.exchange-rates');
+
+// 날씨 API
+Route::get('/api/weather', [HomeController::class, 'getWeather'])->name('api.weather');
+
+// 개인정보처리방침 및 이용약관
+Route::get('/privacy-policy', [PrivacyPolicyController::class, 'index'])->name('privacy-policy');
+Route::get('/terms', [TermsController::class, 'index'])->name('terms');
 
 // 인증 관련 라우트
 Route::prefix('auth')->name('auth.')->group(function () {

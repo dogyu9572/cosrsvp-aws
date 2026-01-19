@@ -50,6 +50,7 @@
 	.header .weather dl + dl {margin-top:6px;}
 	.header .weather dt {width:60px; font-size:12px;}
 	.header .weather dd {width:calc(100% - 60px); font-size:13px;}
+	.header .weather dd p i img {width:18px; height:18px; object-fit:contain;}
 /* footer */
 	.footer .links .inner {gap:25px; padding:0 30px;}
 	.footer .links a {line-height:40px;}

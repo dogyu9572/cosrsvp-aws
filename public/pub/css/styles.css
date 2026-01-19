@@ -60,6 +60,8 @@
 	.header .weather dd p + p {margin-top:4px;}
 	.header .weather .gap1 dd p {gap:8px;}
 	.header .weather .gap2 dd p {gap:15px;}
+	.header .weather dd p i {display:flex; align-items:center;}
+	.header .weather dd p i img {width:20px; height:20px; object-fit:contain;}
 /* footer */
 	.footer {position:relative; background:#fff; z-index:101; letter-spacing:-.5px;}
 	.footer .inner {padding-left:300px;}

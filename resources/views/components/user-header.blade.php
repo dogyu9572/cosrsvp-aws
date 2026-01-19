@@ -27,7 +27,7 @@ $memberAffiliation = $member['affiliation'] ?? 'Basic Medicine_Korea University'
 			<div class="gnb">
 				<div class="menu gnb0 {{ ($gNum ?? '') == 'main' ? 'on' : '' }}"><a href="{{ route('home') }}">Dashboard</a></div>
 				<div class="menu gnb2 {{ ($gNum ?? '') == '02' ? 'on' : '' }}"><a href="{{ route('schedule') }}">Schedule</a></div>
-				<div class="menu gnb3 {{ ($gNum ?? '') == '03' ? 'on' : '' }}"><a href="{{ route('home') }}">Map</a></div>
+				<div class="menu gnb3 {{ ($gNum ?? '') == '03' ? 'on' : '' }}"><a href="{{ route('map') }}">Map</a></div>
 				<div class="menu gnb4 {{ ($gNum ?? '') == '04' ? 'on' : '' }}"><a href="{{ route('notices') }}">Notice</a></div>
 				<div class="menu gnb5 {{ ($gNum ?? '') == '05' ? 'on' : '' }}"><a href="{{ route('gallery') }}">Gallery</a></div>
 				<div class="menu gnb6 {{ ($gNum ?? '') == '06' ? 'on' : '' }}"><a href="{{ route('home') }}">Latest News</a></div>
@@ -48,19 +48,19 @@ $memberAffiliation = $member['affiliation'] ?? 'Basic Medicine_Korea University'
 			<div class="weather">
 				<dl class="gap1">
 					<dt>Weather</dt>
-					<dd>
+					<dd id="weather-info">
 						<p>
-							<i><img src="/pub/images/icon_sun.svg" alt="맑음"></i>
-							<strong>10°C</strong>
+							<i><img src="/pub/images/Icon feather-sun.png" alt="" id="weather-icon" style="display:none;"></i>
+							<strong id="weather-temperature">-</strong>
 						</p>
 					</dd>
 				</dl>
 				<dl class="gap2">
 					<dt>Exchange rate</dt>
-					<dd>
-						<p>USD<strong>1,463.60</strong></p>
-						<p>EUR<strong>1,690.97</strong></p>
-						<p>GBP<strong>1,926.61</strong></p>
+					<dd id="exchange-rates">
+						<p>USD<strong>-</strong></p>
+						<p>EUR<strong>-</strong></p>
+						<p>GBP<strong>-</strong></p>
 					</dd>
 				</dl>
 			</div>
@@ -84,6 +84,108 @@ $(document).ready(function(){
 			$menu.stop(false,true).toggleClass("open").siblings().removeClass("open").removeClass("on").children(".snb").slideUp("fast");
 		}
 	});
+
+	// 환율 정보 로드
+	function loadExchangeRates() {
+		fetch('{{ route("api.exchange-rates") }}')
+			.then(response => response.json())
+			.then(data => {
+				if (data.success && data.data) {
+					const rates = data.data;
+					const $exchangeRates = $('#exchange-rates');
+					
+					// 값이 있을 때만 표시
+					const usd = (rates.usd && rates.usd !== '-') ? rates.usd : '-';
+					const eur = (rates.eur && rates.eur !== '-') ? rates.eur : '-';
+					const gbp = (rates.gbp && rates.gbp !== '-') ? rates.gbp : '-';
+					
+					$exchangeRates.html(
+						'<p>USD<strong>' + usd + '</strong></p>' +
+						'<p>EUR<strong>' + eur + '</strong></p>' +
+						'<p>GBP<strong>' + gbp + '</strong></p>'
+					);
+				}
+			})
+			.catch(error => {
+				console.error('환율 정보를 불러오는데 실패했습니다:', error);
+				// 에러 시에도 기본값 표시하지 않음
+			});
+	}
+
+	// 페이지 로드 시 환율 정보 가져오기
+	loadExchangeRates();
+
+	// 날씨 정보 로드
+	function loadWeather() {
+		// 사용자 위치 가져오기
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(
+				function(position) {
+					const lat = position.coords.latitude;
+					const lng = position.coords.longitude;
+					
+					fetchWeather(lat, lng);
+				},
+				function(error) {
+					console.error("위치 정보를 가져올 수 없습니다:", error);
+					// 위치 정보 없이 날씨 정보 가져오기 (기본 위치 사용)
+					fetchWeather();
+				}
+			);
+		} else {
+			// Geolocation을 지원하지 않는 경우 기본 위치 사용
+			fetchWeather();
+		}
+	}
+
+	function fetchWeather(lat, lng) {
+		let url = '{{ route("api.weather") }}';
+		if (lat && lng) {
+			url += '?lat=' + lat + '&lng=' + lng;
+		}
+		
+		fetch(url)
+			.then(response => response.json())
+			.then(data => {
+				if (data.success && data.data) {
+					const weather = data.data;
+					
+					// 아이콘 업데이트
+					const iconElement = document.getElementById('weather-icon');
+					if (iconElement && weather.icon) {
+						iconElement.src = weather.icon;
+						iconElement.style.display = 'flex';
+						
+						// SKY 코드에 따른 alt 텍스트
+						let altText = '맑음';
+						if (weather.sky === 3) altText = '구름많음';
+						else if (weather.sky === 4) altText = '흐림';
+						
+						// PTY 코드에 따른 alt 텍스트
+						if (weather.pty === 1) altText = '비';
+						else if (weather.pty === 2) altText = '비/눈';
+						else if (weather.pty === 3) altText = '눈';
+						else if (weather.pty === 4) altText = '소나기';
+						
+						iconElement.alt = altText;
+					}
+					
+					// 기온 업데이트
+					const tempElement = document.getElementById('weather-temperature');
+					if (tempElement && weather.temperature !== null && weather.temperature !== undefined) {
+						tempElement.textContent = weather.temperature + '°C';
+					} else {
+						tempElement.textContent = '-';
+					}
+				}
+			})
+			.catch(error => {
+				console.error('날씨 정보를 불러오는데 실패했습니다:', error);
+			});
+	}
+
+	// 페이지 로드 시 날씨 정보 가져오기
+	loadWeather();
 });
 </script>
 @endpush

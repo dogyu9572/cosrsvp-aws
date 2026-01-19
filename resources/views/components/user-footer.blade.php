@@ -7,8 +7,8 @@
 <div class="footer">
 	<div class="links">
 		<ul class="inner">
-			<li><a href="{{ route('home') }}"><strong>Privacy Policy</strong></a></li>
-			<li><a href="{{ route('home') }}">Terms Of Use</a></li>
+			<li><a href="{{ route('privacy-policy') }}"><strong>Privacy Policy</strong></a></li>
+			<li><a href="{{ route('terms') }}">Terms Of Use</a></li>
 		</ul>
 	</div>
 	<div class="info_wrap">
