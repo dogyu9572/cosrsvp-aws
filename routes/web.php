@@ -18,6 +18,8 @@ use App\Http\Controllers\MapController;
 use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\TermsController;
 use App\Http\Controllers\Backoffice\PopupController;
+use App\Http\Controllers\MemberDocumentController;
+use App\Http\Controllers\NoteController;
 
 // =============================================================================
 // 기본 라우트 파일
@@ -81,6 +83,16 @@ Route::get('/api/exchange-rates', [HomeController::class, 'getExchangeRates'])->
 
 // 날씨 API
 Route::get('/api/weather', [HomeController::class, 'getWeather'])->name('api.weather');
+
+// 문서 제출 (로그인 필수)
+Route::post('/member-documents', [MemberDocumentController::class, 'store'])
+    ->name('member-documents.store');
+
+// Note 페이지 (로그인 필수)
+Route::get('/note', [NoteController::class, 'show'])->name('note.show');
+
+// 항공권 파일 다운로드 (로그인 필수)
+Route::get('/ticket-file', [HomeController::class, 'downloadTicketFile'])->name('ticket-file.download');
 
 // 개인정보처리방침 및 이용약관
 Route::get('/privacy-policy', [PrivacyPolicyController::class, 'index'])->name('privacy-policy');

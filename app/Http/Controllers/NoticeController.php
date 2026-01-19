@@ -187,7 +187,7 @@ class NoticeController extends Controller
                 return $matches;
             });
 
-            // 데이터 변환 (attachments 파싱)
+            // 데이터 변환 (attachments 파싱, 영문 필드 추출)
             $transformedNotices = $filteredNotices->map(function ($notice) {
                 $attachments = [];
                 if ($notice->attachments) {
@@ -197,10 +197,18 @@ class NoticeController extends Controller
                     }
                 }
 
+                // custom_fields에서 영문 제목/내용 추출
+                $customFields = json_decode($notice->custom_fields ?? '{}', true);
+                if (!is_array($customFields)) {
+                    $customFields = [];
+                }
+                $englishTitle = $customFields['title_en'] ?? $notice->title;
+                $englishContent = $customFields['content_en'] ?? $notice->content;
+
                 return (object) [
                     'id' => $notice->id,
-                    'title' => $notice->title,
-                    'content' => $notice->content,
+                    'title' => $englishTitle,
+                    'content' => $englishContent,
                     'author_name' => $notice->author_name,
                     'attachments' => $attachments,
                     'view_count' => $notice->view_count,
@@ -316,10 +324,18 @@ class NoticeController extends Controller
                 }
             }
 
+            // custom_fields에서 영문 제목/내용 추출
+            $customFields = json_decode($notice->custom_fields ?? '{}', true);
+            if (!is_array($customFields)) {
+                $customFields = [];
+            }
+            $englishTitle = $customFields['title_en'] ?? $notice->title;
+            $englishContent = $customFields['content_en'] ?? $notice->content;
+
             return (object) [
                 'id' => $notice->id,
-                'title' => $notice->title,
-                'content' => $notice->content,
+                'title' => $englishTitle,
+                'content' => $englishContent,
                 'author_name' => $notice->author_name,
                 'attachments' => $attachments,
                 'view_count' => $notice->view_count,
@@ -446,18 +462,28 @@ class NoticeController extends Controller
                 // 이전 게시글
                 if ($currentIndex > 0) {
                     $prevNotice = $filteredNotices[$currentIndex - 1];
+                    $prevCustomFields = json_decode($prevNotice->custom_fields ?? '{}', true);
+                    if (!is_array($prevCustomFields)) {
+                        $prevCustomFields = [];
+                    }
+                    $prevEnglishTitle = $prevCustomFields['title_en'] ?? $prevNotice->title;
                     $prev = (object) [
                         'id' => $prevNotice->id,
-                        'title' => $prevNotice->title,
+                        'title' => $prevEnglishTitle,
                     ];
                 }
 
                 // 다음 게시글
                 if ($currentIndex < $filteredNotices->count() - 1) {
                     $nextNotice = $filteredNotices[$currentIndex + 1];
+                    $nextCustomFields = json_decode($nextNotice->custom_fields ?? '{}', true);
+                    if (!is_array($nextCustomFields)) {
+                        $nextCustomFields = [];
+                    }
+                    $nextEnglishTitle = $nextCustomFields['title_en'] ?? $nextNotice->title;
                     $next = (object) [
                         'id' => $nextNotice->id,
-                        'title' => $nextNotice->title,
+                        'title' => $nextEnglishTitle,
                     ];
                 }
             }

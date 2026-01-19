@@ -15,7 +15,7 @@ $gName = $gName ?? "Alarm";
         
         <div class="wbox sh2">
             <div class="board_view">
-                <div class="tit">{{ $alarm->korean_title ?: $alarm->english_title }}
+                <div class="tit">{{ $alarm->english_title ?: $alarm->korean_title }}
                     <dl class="date">
                         <dt>Registration Date</dt>
                         <dd>{{ \Carbon\Carbon::parse($alarm->created_at)->format('Y.m.d') }}</dd>
@@ -29,7 +29,7 @@ $gName = $gName ?? "Alarm";
                     </div>
                 @endif
                 <div class="con">
-                    {!! $alarm->korean_content ?: $alarm->english_content !!}
+                    {!! $alarm->english_content ?: $alarm->korean_content !!}
                 </div>
             </div>
             <div class="board_bottom flex_center">

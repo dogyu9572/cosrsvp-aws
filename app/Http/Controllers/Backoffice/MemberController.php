@@ -7,6 +7,7 @@ use App\Http\Requests\StoreMemberRequest;
 use App\Http\Requests\UpdateMemberRequest;
 use App\Services\Backoffice\MemberService;
 use App\Models\Member;
+use App\Models\MemberDocument;
 use App\Models\ProjectTerm;
 use App\Models\Course;
 use App\Models\OperatingInstitution;
@@ -163,6 +164,21 @@ class MemberController extends Controller
             $extension = $file->getClientOriginalExtension();
             $fileName = $originalName . '_' . time() . '.' . $extension;
             $data['ticket_file'] = $file->storeAs('members/tickets', $fileName, 'public');
+        }
+
+        // 보완요청 처리
+        if ($request->has('supplement_request') && is_array($request->supplement_request)) {
+            foreach ($request->supplement_request as $documentId => $supplementContent) {
+                $document = MemberDocument::find($documentId);
+                if ($document && $document->member_id == $member->id) {
+                    // 보완요청 내용이 있으면 저장하고 상태 변경
+                    if (!empty(trim($supplementContent))) {
+                        $document->supplement_request_content = trim($supplementContent);
+                        $document->status = 'supplement_requested';
+                        $document->save();
+                    }
+                }
+            }
         }
 
         $this->memberService->updateMember($member, $data, Auth::id());

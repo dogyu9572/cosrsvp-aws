@@ -6,10 +6,13 @@ use Illuminate\Http\Request;
 use App\Models\Board;
 use App\Models\Popup;
 use App\Models\Banner;
+use App\Models\Member;
+use App\Models\MemberDocument;
 use App\Services\ExchangeRateService;
 use App\Services\WeatherService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class HomeController extends Controller
 {
@@ -47,6 +50,20 @@ class HomeController extends Controller
         // notices 게시판 최신글 3개 - 프로젝트 필터링 적용
         $noticePosts = $this->getLatestPostsWithFilter('notices', 3, $memberProjectInfo);
         
+        // 스케줄 데이터 조회
+        $schedules = $this->getSchedulesByProjectTerm($memberProjectInfo);
+        
+        // 로그인한 회원의 전체 정보 조회 (입출국 정보 포함)
+        $memberId = $member['id'] ?? null;
+        $memberModel = null;
+        $memberDocuments = collect();
+        if ($memberId) {
+            $memberModel = Member::find($memberId);
+            $memberDocuments = MemberDocument::where('member_id', $memberId)
+                ->orderBy('submission_deadline', 'asc')
+                ->get();
+        }
+        
         // 활성화된 팝업 조회 (쿠키 확인하여 숨겨진 팝업 제외)
         $popups = Popup::select('id', 'title', 'popup_type', 'popup_display_type', 'popup_image', 'popup_content', 'url', 'url_target', 'width', 'height', 'position_top', 'position_left')
             ->active()
@@ -65,7 +82,7 @@ class HomeController extends Controller
             ->ordered()
             ->get();
         
-        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners'));
+        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners', 'schedules', 'memberDocuments', 'memberId', 'memberModel'));
     }
     
     /**
@@ -211,10 +228,18 @@ class HomeController extends Controller
             })->take($limit);
 
             return $filteredPosts->map(function ($post) use ($boardSlug) {
+                // custom_fields에서 영문 제목/내용 추출
+                $customFields = json_decode($post->custom_fields ?? '{}', true);
+                if (!is_array($customFields)) {
+                    $customFields = [];
+                }
+                $englishTitle = $customFields['title_en'] ?? $post->title;
+                $englishContent = $customFields['content_en'] ?? ($post->content ?? '');
+
                 return (object) [
                     'id' => $post->id,
-                    'title' => $post->title,
-                    'content' => $post->content ?? '',
+                    'title' => $englishTitle,
+                    'content' => $englishContent,
                     'created_at' => $post->created_at,
                     'thumbnail' => $post->thumbnail,
                     'url' => route('backoffice.board-posts.show', [$boardSlug, $post->id])
@@ -223,6 +248,187 @@ class HomeController extends Controller
                 
         } catch (\Exception $e) {
             Log::error("게시판 데이터 조회 오류: " . $e->getMessage());
+            return collect();
+        }
+    }
+
+    /**
+     * 프로젝트 기수에 해당하는 스케줄 조회
+     */
+    private function getSchedulesByProjectTerm($memberProjectInfo)
+    {
+        try {
+            $tableName = 'board_schedules';
+
+            // 테이블 존재 여부 확인
+            if (!DB::getSchemaBuilder()->hasTable($tableName)) {
+                return collect();
+            }
+
+            $query = DB::table($tableName)
+                ->select('id', 'title', 'content', 'custom_fields', 'created_at')
+                ->whereNull('deleted_at');
+
+            // 프로젝트 관련 정보 필터링 (모든 필드 일치해야 함)
+            if ($memberProjectInfo['project_term_id']) {
+                $query->where(function($q) use ($memberProjectInfo) {
+                    $projectTermId = $memberProjectInfo['project_term_id'];
+                    $projectTermIdStr = (string)$projectTermId;
+                    
+                    // project_term_id 필터링
+                    $q->where(function($subQ) use ($projectTermId, $projectTermIdStr) {
+                        $subQ->whereRaw("JSON_EXTRACT(custom_fields, '$.project_term') LIKE ?", ['%"project_term_id":' . $projectTermId . '%'])
+                            ->orWhereRaw("JSON_EXTRACT(custom_fields, '$.project_term') LIKE ?", ['%"project_term_id":"' . $projectTermIdStr . '"%'])
+                            ->orWhereRaw("JSON_EXTRACT(JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.project_term')), '$.project_term_id') = ?", [$projectTermId])
+                            ->orWhereRaw("JSON_EXTRACT(JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.project_term')), '$.project_term_id') = ?", [$projectTermIdStr])
+                            ->orWhereRaw("custom_fields LIKE ?", ['%"project_term_id":' . $projectTermId . '%'])
+                            ->orWhereRaw("custom_fields LIKE ?", ['%"project_term_id":"' . $projectTermIdStr . '"%']);
+                    });
+                });
+            }
+
+            $schedules = $query->orderBy('created_at', 'desc')->get();
+            
+            // 필터링 후 추가 검증: PHP 레벨에서 모든 프로젝트 관련 필드가 일치하는 것만 필터링
+            $filteredSchedules = $schedules->filter(function ($schedule) use ($memberProjectInfo) {
+                $customFields = json_decode($schedule->custom_fields ?? '{}', true);
+                
+                if (!is_array($customFields)) {
+                    return false;
+                }
+                
+                // project_term이 JSON 문자열로 저장된 경우 파싱
+                if (isset($customFields['project_term']) && is_string($customFields['project_term'])) {
+                    $projectTermParsed = json_decode($customFields['project_term'], true);
+                    if (is_array($projectTermParsed)) {
+                        $customFields['project_term'] = $projectTermParsed;
+                    }
+                }
+                
+                // project_term 데이터 추출
+                $scheduleProjectInfo = [];
+                if (isset($customFields['project_term'])) {
+                    $projectTermData = $customFields['project_term'];
+                    if (is_string($projectTermData)) {
+                        $projectTermData = json_decode($projectTermData, true);
+                    }
+                    if (is_array($projectTermData)) {
+                        $scheduleProjectInfo = [
+                            'project_term_id' => $projectTermData['project_term_id'] ?? null,
+                            'course_id' => $projectTermData['course_id'] ?? null,
+                            'operating_institution_id' => $projectTermData['operating_institution_id'] ?? null,
+                            'project_period_id' => $projectTermData['project_period_id'] ?? null,
+                            'country_id' => $projectTermData['country_id'] ?? null,
+                        ];
+                    }
+                }
+                
+                // 모든 필드가 일치하는지 확인
+                $matches = true;
+                foreach ($memberProjectInfo as $key => $memberValue) {
+                    if ($memberValue === null) {
+                        continue; // 회원 정보가 없으면 비교하지 않음
+                    }
+                    
+                    $scheduleValue = $scheduleProjectInfo[$key] ?? null;
+                    if ($scheduleValue === null) {
+                        $matches = false;
+                        break;
+                    }
+                    
+                    // 숫자/문자열 모두 비교
+                    if (($scheduleValue != $memberValue) && ((string)$scheduleValue !== (string)$memberValue)) {
+                        $matches = false;
+                        break;
+                    }
+                }
+                
+                return $matches;
+            });
+            
+            return $filteredSchedules->map(function ($schedule) {
+                    $customFields = json_decode($schedule->custom_fields ?? '{}', true);
+                    
+                    if (!is_array($customFields)) {
+                        $customFields = [];
+                    }
+                    
+                    // project_term이 JSON 문자열로 저장된 경우 파싱
+                    if (isset($customFields['project_term']) && is_string($customFields['project_term'])) {
+                        $projectTermParsed = json_decode($customFields['project_term'], true);
+                        if (is_array($projectTermParsed)) {
+                            $customFields['project_term'] = $projectTermParsed;
+                        }
+                    }
+                    
+                    // 날짜 범위 추출 (display_date 또는 display_date_range 필드 확인)
+                    $displayDateField = $customFields['display_date_range'] ?? $customFields['display_date'] ?? null;
+                    $startDate = null;
+                    $endDate = null;
+                    
+                    if ($displayDateField) {
+                        // display_date가 JSON 문자열로 저장된 경우 파싱
+                        if (is_string($displayDateField)) {
+                            $decoded = json_decode($displayDateField, true);
+                            if (is_array($decoded)) {
+                                $displayDateField = $decoded;
+                            }
+                        }
+                        
+                        if (is_array($displayDateField)) {
+                            // use_display_date가 true인 경우에만 날짜 사용 (schedules 게시판은 항상 사용)
+                            $useDisplayDate = $displayDateField['use_display_date'] ?? true;
+                            
+                            if ($useDisplayDate) {
+                                $startDate = $displayDateField['start_date'] ?? null;
+                                $endDate = $displayDateField['end_date'] ?? null;
+                            }
+                        }
+                    }
+
+                    // 날짜 범위가 있으면 일수 계산
+                    $daySpan = null;
+                    if ($startDate && $endDate) {
+                        try {
+                            $start = Carbon::parse($startDate);
+                            $end = Carbon::parse($endDate);
+                            $daySpan = $start->diffInDays($end) + 1; // 시작일 포함
+                        } catch (\Exception $e) {
+                            Log::error("날짜 파싱 오류 (ID: {$schedule->id}): " . $e->getMessage());
+                        }
+                    }
+
+                    // project_term 정보 추출
+                    $projectTermInfo = null;
+                    if (isset($customFields['project_term'])) {
+                        $projectTermData = $customFields['project_term'];
+                        if (is_string($projectTermData)) {
+                            $projectTermData = json_decode($projectTermData, true);
+                        }
+                        if (is_array($projectTermData)) {
+                            $projectTermInfo = $projectTermData['project_term_id'] ?? null;
+                        }
+                    }
+
+                    return (object) [
+                        'id' => $schedule->id,
+                        'title' => $schedule->title,
+                        'content' => $schedule->content ?? '',
+                        'start_date' => $startDate,
+                        'end_date' => $endDate,
+                        'day_span' => $daySpan,
+                        'created_at' => $schedule->created_at,
+                        'project_term_id' => $projectTermInfo,
+                    ];
+                })
+                ->filter(function ($schedule) {
+                    // 날짜 범위가 있는 일정만 반환
+                    return $schedule->start_date && $schedule->end_date;
+                })
+                ->values();
+
+        } catch (\Exception $e) {
+            Log::error("스케줄 데이터 조회 오류: " . $e->getMessage());
             return collect();
         }
     }
@@ -289,5 +495,34 @@ class HomeController extends Controller
             'success' => true,
             'data' => $weather,
         ]);
+    }
+
+    /**
+     * 항공권 파일 다운로드 (사용자용)
+     */
+    public function downloadTicketFile()
+    {
+        $member = session('member');
+        if (!$member || !isset($member['id'])) {
+            abort(401, '로그인이 필요합니다.');
+        }
+
+        $memberModel = Member::findOrFail($member['id']);
+        
+        if (!$memberModel->ticket_file) {
+            abort(404, '파일을 찾을 수 없습니다.');
+        }
+
+        $filePath = storage_path('app/public/' . $memberModel->ticket_file);
+        
+        if (!file_exists($filePath)) {
+            abort(404, '파일을 찾을 수 없습니다.');
+        }
+
+        // 저장된 파일명에서 원본 파일명 추출 (타임스탬프 제거)
+        $storedFileName = basename($memberModel->ticket_file);
+        $originalFileName = preg_replace('/_\d+\./', '.', $storedFileName);
+        
+        return response()->download($filePath, $originalFileName);
     }
 }

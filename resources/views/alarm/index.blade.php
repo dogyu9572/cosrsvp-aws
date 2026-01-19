@@ -43,7 +43,7 @@ $gName = $gName ?? "Alarm";
                             <tr>
                                 <td class="num">{{ $alarms->total() - (($alarms->currentPage() - 1) * $alarms->perPage()) - $loop->index }}</td>
                                 <td class="tal tit">
-                                    <a href="{{ route('alarms.show', $alarm->id) }}">{{ $alarm->korean_title ?: $alarm->english_title }}</a>
+                                    <a href="{{ route('alarms.show', $alarm->id) }}">{{ $alarm->english_title ?: $alarm->korean_title }}</a>
                                 </td>
                                 <td class="file">
                                     @if($alarm->files && $alarm->files->count() > 0)

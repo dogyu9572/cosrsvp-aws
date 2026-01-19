@@ -9,7 +9,7 @@
 		<div class="dashboard_notice">
 			<div class="tit">Notice</div>
 			<div class="con">
-				<a href="#this">{{ $topNotice->title }}</a>
+				<a href="#this">{{ $topNotice->content }}</a>
 			</div>
 		</div>
 		@endif
@@ -28,10 +28,16 @@
 		<div class="dash_cont mc01">
 			<div class="left">
 				<div class="wbox left_half">
-					<div class="itit s ico_date">Entry/Departure Dates<a href="#this" class="btn">Check Flight Ticket</a></div>
+					<div class="itit s ico_date">Entry/Departure Dates
+						@if($memberModel && $memberModel->ticket_file)
+							<a href="{{ route('ticket-file.download') }}" class="btn" target="_blank">Check Flight Ticket</a>
+						@else
+							<a href="#this" class="btn" onclick="alert('항공권 파일이 등록되지 않았습니다.'); return false;">Check Flight Ticket</a>
+						@endif
+					</div>
 					<div class="date_beaf">
-						<div class="gbox"><div class="tt">Entry Date</div><strong>2025-01-01</strong></div>
-						<div class="gbox"><div class="tt">Departure Dates</div><strong>2025-01-01</strong></div>
+						<div class="gbox"><div class="tt">Entry Date</div><strong>{{ $memberModel && $memberModel->entry_date ? $memberModel->entry_date->format('Y-m-d') : '-' }}</strong></div>
+						<div class="gbox"><div class="tt">Departure Dates</div><strong>{{ $memberModel && $memberModel->exit_date ? $memberModel->exit_date->format('Y-m-d') : '-' }}</strong></div>
 					</div>
 					<p class="c_red">*Please check your flight ticket before entering the country.</p>
 				</div>
@@ -65,14 +71,43 @@
 							</tr>
 						</thead>
 						<tbody>
+							@if($memberDocuments && $memberDocuments->count() > 0)
+								@foreach($memberDocuments as $document)
+								<tr>
+									<td>
+										@if($document->status == 'submitted')
+											<strong class="state submitted">제출완료</strong>
+										@elseif($document->status == 'not_submitted')
+											<strong class="state not_submitted">미제출</strong>
+										@elseif($document->status == 'supplement_requested')
+											<strong class="state supplement_requested">보완요청</strong>
+										@elseif($document->status == 'resubmitted')
+											<strong class="state resubmitted">재제출완료</strong>
+										@else
+											<strong class="state not_submitted">미제출</strong>
+										@endif
+									</td>
+									<td>{{ $document->document_name }}</td>
+									<td>{{ $document->submission_deadline ? $document->submission_deadline->format('Y-m-d') : '' }}</td>
+									<td><a href="{{ route('note.show') }}" class="btn" onclick="return checkNotesLink({{ $memberId }});">Confirm</a></td>
+									<td>
+										<button type="button" onclick="showSupplementReason({{ $document->id }}, '{{ $document->supplement_request_content ? addslashes($document->supplement_request_content) : '' }}');" class="btn">Confirm</button>
+									</td>
+									<td>
+										<button type="button" onclick="showDocumentUpload({{ $document->id }}, '{{ addslashes($document->document_name) }}');" class="btn">Supplement</button>
+									</td>
+								</tr>
+								@endforeach
+							@else
 							<tr>
-								<td><strong class="state back">Rejection</strong></td>
-								<td>Preparing for Entry</td>
-								<td>2025-01-01</td>
-								<td><a href="{{ route('home') }}" class="btn">Confirm</a></td>
-								<td><button type="button" onclick="layerShow('pop_supplement');" class="btn">Confirm</button></td>
-								<td><button type="button" onclick="layerShow('pop_reason');" class="btn">Supplement</button></td>
+								<td><strong class="state not_submitted">-</strong></td>
+								<td>-</td>
+								<td>-</td>
+								<td><a href="{{ route('note.show') }}" class="btn" onclick="return checkNotesLink({{ $memberId ?? 0 }});">Confirm</a></td>
+								<td><button type="button" onclick="showSupplementReason(0, '');" class="btn">Confirm</button></td>
+								<td><button type="button" onclick="showDocumentUpload(0, '');" class="btn">Supplement</button></td>
 							</tr>
+							@endif
 						</tbody>
 					</table>
 				</div>
@@ -81,7 +116,7 @@
 		
 		<div class="dash_cont mc02">
 			<div class="wbox left month_wrap">
-				<div class="itit ico_month">2025.08
+				<div class="itit ico_month" id="currentMonth">2025.08
 					<div class="btns">
 						<button type="button" class="btn prev">Prev</button>
 						<button type="button" class="btn next">Next</button>
@@ -100,85 +135,13 @@
 								<th>토</th>
 							</tr>
 						</thead>
-						<tbody>
-							<tr>
-								<td class="other"><span>27</span></td>
-								<td class="other"><span>28</span></td>
-								<td class="other"><span>29</span></td>
-								<td class="other"><span>30</span></td>
-								<td class="other"><span>31</span></td>
-								<td><span>01</span>
-									<ul class="list">
-										<li class="day1"><button type="button" title="자체건강검진">자체건강검진</button></li>
-									</ul>
-								</td>
-								<td><span>02</span></td>
-							</tr>
-							<tr>
-								<td><span>03</span></td>
-								<td><span>04</span></td>
-								<td><span>05</span>
-									<ul class="list">
-										<li class="day1"><button type="button" title="계좌개설">계좌개설</button></li>
-									</ul>
-								</td>
-								<td><span>06</span></td>
-								<td><span>07</span></td>
-								<td><span>08</span></td>
-								<td><span>09</span></td>
-							</tr>
-							<tr>
-								<td><span>10</span></td>
-								<td><span>11</span></td>
-								<td><span>12</span>
-									<ul class="list">
-										<li class="day4"><button type="button" title="경주 문화체험">경주 문화체험</button></li>
-									</ul>
-								</td>
-								<td><span>13</span>
-									<ul class="list">
-										<li class="day5"><button type="button" title="경주 문화체험">경주 문화체험</button></li>
-									</ul>
-								</td>
-								<td><span>14</span></td>
-								<td><span>15</span></td>
-								<td><span>16</span></td>
-							</tr>
-							<tr>
-								<td><span>17</span></td>
-								<td><span>18</span></td>
-								<td><span>19</span></td>
-								<td><span>20</span></td>
-								<td class="today"><span>21</span></td>
-								<td><span>22</span></td>
-								<td><span>23</span></td>
-							</tr>
-							<tr>
-								<td><span>24</span></td>
-								<td><span>25</span></td>
-								<td><span>26</span></td>
-								<td><span>27</span></td>
-								<td><span>28</span></td>
-								<td><span>29</span></td>
-								<td><span>30</span></td>
-							</tr>
-							<tr>
-								<td><span>31</span></td>
-								<td class="other"><span>01</span></td>
-								<td class="other"><span>02</span></td>
-								<td class="other"><span>03</span></td>
-								<td class="other"><span>04</span></td>
-								<td class="other"><span>05</span></td>
-								<td class="other"><span>06</span></td>
-							</tr>
+						<tbody id="calendarBody">
+							<!-- 달력이 JavaScript로 동적 생성됨 -->
 						</tbody>
 					</table>
 				</div>
-				<div class="day_list mo_vw">
-					<a href="#this"><strong>2025.08.01</strong><p>자체건강검진</p></a>
-					<a href="#this"><strong>2025.08.05</strong><p>계좌계설</p></a>
-					<a href="#this"><strong>2025.08.12 ~ 2025.08.15</strong><p>경주 문화체험</p></a>
-					<a href="#this"><strong>2025.08.13 ~ 2025.08.17</strong><p>경주 문화체험</p></a>
+				<div class="day_list mo_vw" id="dayList">
+					<!-- 모바일용 일정 리스트가 JavaScript로 동적 생성됨 -->
 				</div>
 			</div>
 			<div class="right">
@@ -371,7 +334,7 @@
 				<div class="wbox w100p inquiries_area">
 					<div class="tit">Contact Us</div>
 					<p>Do you have any questions about your training, including entry, accommodation, or documentation?<br/>Please check our Frequently Asked Questions (FAQ) and feel free to contact us anytime.</p>
-					<a href="{{ route('home') }}" class="btn flex_center">Contact Us</a>
+					<a href="{{ route('inquiries') }}" class="btn flex_center">Contact Us</a>
 				</div>
 			</div>
 		</div>
@@ -393,162 +356,321 @@
 $(document).ready (function () {
 //달력
 $(function () {
+	// 스케줄 데이터
+	const schedules = @json($schedules ?? []);
+	
+	// 현재 월 설정 (오늘 날짜 기준)
+	let currentDate = new Date();
+	let currentYear = currentDate.getFullYear();
+	let currentMonth = currentDate.getMonth(); // 0-11
+	
+	// 달력 초기화
+	function initCalendar() {
+		renderCalendar(currentYear, currentMonth);
+	}
+	
+	// 달력 렌더링
+	function renderCalendar(year, month) {
+		const $tbody = $('#calendarBody');
+		$tbody.empty();
+		
+		// 현재 월 표시
+		$('#currentMonth').text(year + '.' + String(month + 1).padStart(2, '0'));
+		
+		// 해당 월의 첫 날과 마지막 날
+		const firstDay = new Date(year, month, 1);
+		const lastDay = new Date(year, month + 1, 0);
+		const daysInMonth = lastDay.getDate();
+		const startDayOfWeek = firstDay.getDay(); // 0(일) ~ 6(토)
+		
+		// 이전 달의 마지막 날들
+		const prevMonthLastDay = new Date(year, month, 0).getDate();
+		
+		let date = 1;
+		let $tr = $('<tr></tr>');
+		
+		// 첫 주: 이전 달 날짜들
+		for (let i = 0; i < startDayOfWeek; i++) {
+			const prevDate = prevMonthLastDay - startDayOfWeek + i + 1;
+			const $td = $('<td class="other"><span>' + prevDate + '</span></td>');
+			$tr.append($td);
+		}
+		
+		// 현재 달 날짜들
+		while (date <= daysInMonth) {
+			if ($tr.children().length === 7) {
+				$tbody.append($tr);
+				$tr = $('<tr></tr>');
+			}
+			
+			const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(date).padStart(2, '0');
+			const isToday = year === new Date().getFullYear() && 
+			               month === new Date().getMonth() && 
+			               date === new Date().getDate();
+			
+			const $td = $('<td' + (isToday ? ' class="today"' : '') + '><span>' + date + '</span></td>');
+			const $list = $('<ul class="list"></ul>');
+			
+			// 해당 날짜의 일정 찾기
+			schedules.forEach(function(schedule) {
+				if (!schedule.start_date || !schedule.end_date) {
+					return;
+				}
+				
+				// 날짜 문자열을 Date 객체로 변환 (YYYY-MM-DD 형식)
+				const startDateStr = schedule.start_date.split(' ')[0]; // 시간 부분 제거
+				const endDateStr = schedule.end_date.split(' ')[0];
+				const currentDateStr = dateStr;
+				
+				const startDate = new Date(startDateStr + 'T00:00:00');
+				const endDate = new Date(endDateStr + 'T00:00:00');
+				const currentDate = new Date(currentDateStr + 'T00:00:00');
+				
+				// 날짜 비교를 위해 시간 부분 제거
+				startDate.setHours(0, 0, 0, 0);
+				endDate.setHours(0, 0, 0, 0);
+				currentDate.setHours(0, 0, 0, 0);
+				
+				// 날짜 범위 내에 있는지 확인
+				if (currentDate >= startDate && currentDate <= endDate) {
+					// 시작일인 경우에만 버튼 추가 (중복 방지)
+					if (currentDate.getTime() === startDate.getTime()) {
+						const $li = $('<li class="day' + schedule.day_span + '"><button type="button" title="' + schedule.title + '"><strong>' + schedule.title + '</strong></button></li>');
+						$list.append($li);
+					}
+				}
+			});
+			
+			if ($list.children().length > 0) {
+				$td.append($list);
+			}
+			
+			$tr.append($td);
+			date++;
+		}
+		
+		// 마지막 주: 다음 달 날짜들
+		while ($tr.children().length < 7) {
+			const $td = $('<td class="other"><span>' + String(date - daysInMonth).padStart(2, '0') + '</span></td>');
+			$tr.append($td);
+			date++;
+		}
+		
+		if ($tr.children().length > 0) {
+			$tbody.append($tr);
+		}
+		
+		// 달력 처리 로직 적용
+		applyCalendarLogic();
+		
+		// 모바일용 일정 리스트 생성
+		updateDayList(year, month);
+	}
+	
+	// 모바일용 일정 리스트 업데이트
+	function updateDayList(year, month) {
+		const $dayList = $('#dayList');
+		$dayList.empty();
+		
+		schedules.forEach(function(schedule) {
+			if (!schedule.start_date || !schedule.end_date) return;
+			
+			const startDate = new Date(schedule.start_date);
+			const endDate = new Date(schedule.end_date);
+			
+			// 해당 월에 포함되는 일정만 표시
+			if (startDate.getFullYear() === year && startDate.getMonth() === month) {
+				const startStr = formatDate(startDate);
+				const endStr = formatDate(endDate);
+				const dateRange = startStr === endStr ? startStr : startStr + ' ~ ' + endStr;
+				
+				const $item = $('<a href="#this"><strong>' + dateRange + '</strong><p>' + schedule.title + '</p></a>');
+				$dayList.append($item);
+			}
+		});
+	}
+	
+	// 날짜 포맷팅
+	function formatDate(date) {
+		return date.getFullYear() + '.' + String(date.getMonth() + 1).padStart(2, '0') + '.' + String(date.getDate()).padStart(2, '0');
+	}
+	
+	// 달력 처리 로직 (메인 페이지와 동일)
+	function applyCalendarLogic() {
+		const tdPadding = (function () {
+			const $td = $('.month_area tbody td').first();
+			const pl = parseInt($td.css('padding-left')) || 0;
+			const pr = parseInt($td.css('padding-right')) || 0;
+			return pl + pr;
+		})();
 
-    // 1) td 좌우 padding 합 구하기
-    const tdPadding = (function () {
-        const $td = $('.month_area tbody td').first();
-        const pl = parseInt($td.css('padding-left')) || 0;
-        const pr = parseInt($td.css('padding-right')) || 0;
-        return pl + pr;
-    })();
+		const blankCountMap = new Map();
 
-    // td별 blank 누적 카운트 저장용
-    const blankCountMap = new Map();
+		function addBlankCount($td) {
+			const key = $td[0];
+			const cur = blankCountMap.get(key) || 0;
+			blankCountMap.set(key, cur + 1);
+		}
 
-    function addBlankCount($td) {
-        const key = $td[0];
-        const cur = blankCountMap.get(key) || 0;
-        blankCountMap.set(key, cur + 1);
-    }
+		function applyBlankElements() {
+			blankCountMap.forEach((count, key) => {
+				const $td = $(key);
+				if (count <= 0) return;
 
-    function applyBlankElements() {
-        blankCountMap.forEach((count, key) => {
-            const $td = $(key);
-            if (count <= 0) return;
+				let $list = $td.find('ul.list');
+				if (!$list.length) {
+					$td.append('<ul class="list"></ul>');
+					$list = $td.find('ul.list');
+				}
 
-            let $list = $td.find('ul.list');
-            if (!$list.length) {
-                $td.append('<ul class="list"></ul>');
-                $list = $td.find('ul.list');
-            }
+				for (let i = 0; i < count; i++) {
+					$list.prepend('<li class="blank"></li>');
+				}
+			});
+		}
 
-            // 필요 개수만큼 blank 누적 prepend
-            for (let i = 0; i < count; i++) {
-                $list.prepend('<li class="blank"></li>');
-            }
-        });
-    }
+		const originalEvents = $('.month_area .list li[class*="day"]').toArray();
 
-    // ---------------------------------------------------
-    // 2) "원래 있던 dayN 일정" 기반으로
-    //    - 주 넘김 분할
-    //    - 전체 스팬에 대한 blankCount 계산을 동시에 처리
-    // ---------------------------------------------------
-    const originalEvents = $('.month_area .list li[class*="day"]').toArray();
+		originalEvents.forEach(function (li) {
+			const $li = $(li);
+			if (!$li.closest('table').length) return;
 
-    originalEvents.forEach(function (li) {
-        const $li = $(li);
+			const classStr = $li.attr('class') || '';
+			const m = classStr.match(/day(\d+)/);
+			if (!m) return;
 
-        // 이미 다른 곳으로 옮겨졌으면 무시
-        if (!$li.closest('table').length) return;
+			let span = parseInt(m[1], 10);
+			if (!span || span <= 0) return;
 
-        const classStr = $li.attr('class') || '';
-        const m = classStr.match(/day(\d+)/);
-        if (!m) return;
+			const $startTd = $li.closest('td');
+			const $startTr = $li.closest('tr');
+			const $startRowTds = $startTr.children('td');
+			const startColIndex = $startRowTds.index($startTd);
 
-        let span = parseInt(m[1], 10); // day8 → 8
-        if (!span || span <= 0) return;
+			if (startColIndex < 0) return;
 
-        const $startTd = $li.closest('td');
-        const $startTr = $li.closest('tr');
-        const $startRowTds = $startTr.children('td');
-        const startColIndex = $startRowTds.index($startTd);
+			let remaining = span;
+			let $row = $startTr;
+			let col = startColIndex;
+			let firstSegment = true;
+			let offsetFromStart = 0;
 
-        if (startColIndex < 0) return;
+			while (remaining > 0 && $row.length) {
+				const $rowTds = $row.children('td');
+				const slotCountInRow = 7 - col;
+				const spanHere = Math.min(remaining, slotCountInRow);
 
-        // 분할 및 blank 계산용 변수
-        let remaining = span;
-        let $row = $startTr;
-        let col = startColIndex;
-        let firstSegment = true;
-        let offsetFromStart = 0; // 이벤트 시작일부터의 총 이동 일수
+				for (let d = 0; d < spanHere; d++) {
+					const globalOffset = offsetFromStart + d;
+					if (globalOffset === 0) continue;
+					const $targetTd = $rowTds.eq(col + d);
+					if ($targetTd.length) {
+						addBlankCount($targetTd);
+					}
+				}
 
-        while (remaining > 0 && $row.length) {
-            const $rowTds = $row.children('td');
-            const slotCountInRow = 7 - col; // 이 주에서 남은 칸 수
-            const spanHere = Math.min(remaining, slotCountInRow);
+				if (firstSegment) {
+					if (spanHere !== span) {
+						const newClass = classStr.replace(/day\d+/, 'day' + spanHere);
+						$li.attr('class', newClass);
+					}
+					remaining -= spanHere;
+					firstSegment = false;
+				} else {
+					const $targetTd = $rowTds.eq(col);
+					if (!$targetTd.length) break;
 
-            // ---- [A] 이 구간에서 blankCount 계산 ----
-            // 전체 스팬 기준: 시작일 다음날부터 N-1일까지 blank +1
-            for (let d = 0; d < spanHere; d++) {
-                const globalOffset = offsetFromStart + d;
-                if (globalOffset === 0) {
-                    // 시작일은 실제 dayN 버튼이 들어가는 칸이므로 blank 생성 X
-                    continue;
-                }
-                const $targetTd = $rowTds.eq(col + d);
-                if ($targetTd.length) {
-                    addBlankCount($targetTd);
-                }
-            }
+					const $newLi = $li.clone(false);
+					const newClassStr = ($newLi.attr('class') || '').replace(/day\d+/, 'day' + spanHere);
+					$newLi.attr('class', newClassStr);
+					$newLi.find('button').removeAttr('style');
 
-            // ---- [B] dayN li 분할 처리 ----
-            if (firstSegment) {
-                // 첫 번째 조각: 기존 li 의 dayN 을 spanHere 으로 변경
-                if (spanHere !== span) {
-                    const newClass = classStr.replace(/day\d+/, 'day' + spanHere);
-                    $li.attr('class', newClass);
-                }
-                remaining -= spanHere;
-                firstSegment = false;
-            } else {
-                // 이후 조각: li 복제해서 다른 주에 배치
-                const $targetTd = $rowTds.eq(col);
-                if (!$targetTd.length) break;
+					let $list = $targetTd.find('ul.list');
+					if (!$list.length) {
+						$targetTd.append('<ul class="list"></ul>');
+						$list = $targetTd.find('ul.list');
+					}
+					$list.append($newLi);
 
-                const $newLi = $li.clone(false);
-                const newClassStr = ($newLi.attr('class') || '').replace(/day\d+/, 'day' + spanHere);
-                $newLi.attr('class', newClassStr);
-                // width 스타일은 뒤에서 다시 계산하므로 제거
-                $newLi.find('button').removeAttr('style');
+					remaining -= spanHere;
+				}
 
-                let $list = $targetTd.find('ul.list');
-                if (!$list.length) {
-                    $targetTd.append('<ul class="list"></ul>');
-                    $list = $targetTd.find('ul.list');
-                }
-                $list.append($newLi);
+				offsetFromStart += spanHere;
 
-                remaining -= spanHere;
-            }
+				if (remaining > 0) {
+					$row = $row.next('tr');
+					col = 0;
+				}
+			}
+		});
 
-            // 다음 구간을 위해 offset/row/col 갱신
-            offsetFromStart += spanHere;
+		$('.month_area .list li[class*="day"]').each(function () {
+			const $li = $(this);
+			const classStr = $li.attr('class') || '';
+			const m = classStr.match(/day(\d+)/);
+			if (!m) return;
 
-            if (remaining > 0) {
-                $row = $row.next('tr');
-                col = 0; // 다음 주는 항상 첫번째 칸부터
-            }
-        }
-    });
+			const n = parseInt(m[1], 10);
+			if (!n || n <= 0) return;
 
-    // ---------------------------------------------------
-    // 3) 모든 dayN 들에 대해 버튼 width 계산 (요구사항 1)
-    // ---------------------------------------------------
-    $('.month_area .list li[class*="day"]').each(function () {
-        const $li = $(this);
-        const classStr = $li.attr('class') || '';
-        const m = classStr.match(/day(\d+)/);
-        if (!m) return;
+			const widthPercent = 100 * n;
+			const extraPad = tdPadding * (n - 1);
+			const calcWidth = `calc(${widthPercent}% + ${extraPad}px)`;
 
-        const n = parseInt(m[1], 10); // dayN 의 N
-        if (!n || n <= 0) return;
+			const $btn = $li.find('button');
+			$btn.css({
+				width: calcWidth,
+				display: 'block'
+			});
+		});
 
-        const widthPercent = 100 * n;
-        const extraPad = tdPadding * (n - 1);
-        const calcWidth = `calc(${widthPercent}% + ${extraPad}px)`;
+		applyBlankElements();
+		
+		// 높이 조정
+		function adjustListItemHeights() {
+			$('.month_area tbody td').each(function () {
+				const $td = $(this);
+				const $lis = $td.find('ul.list > li');
 
-        const $btn = $li.find('button');
-        $btn.css({
-            width: calcWidth,
-            display: 'block'
-        });
-    });
+				if ($lis.length === 0) return;
 
-    // ---------------------------------------------------
-    // 4) 계산된 blankCountMap 을 실제 DOM 에 반영
-    // ---------------------------------------------------
-    applyBlankElements();
+				let maxHeight = 0;
+				$lis.each(function () {
+					const $btn = $(this).find('button');
+					if ($btn.length) {
+						const h = $btn.outerHeight();
+						if (h > maxHeight) maxHeight = h;
+					}
+				});
+
+				if (maxHeight === 0) return;
+				$lis.css('height', maxHeight + 'px');
+			});
+		}
+		adjustListItemHeights();
+	}
+	
+	// 이전/다음 월 버튼
+	$('.month_wrap .prev').on('click', function() {
+		currentMonth--;
+		if (currentMonth < 0) {
+			currentMonth = 11;
+			currentYear--;
+		}
+		renderCalendar(currentYear, currentMonth);
+	});
+	
+	$('.month_wrap .next').on('click', function() {
+		currentMonth++;
+		if (currentMonth > 11) {
+			currentMonth = 0;
+			currentYear++;
+		}
+		renderCalendar(currentYear, currentMonth);
+	});
+	
+	// 초기화
+	initCalendar();
 });
 
 //최신뉴스 탭
@@ -562,6 +684,15 @@ $(function () {
 		$(this).addClass('on');
 		$(this).parent().next('.jq_cont').children().hide().eq(index).show();
 	});
+	
+	// Notes 링크 체크
+	window.checkNotesLink = function(memberId) {
+		if (!memberId || memberId === 0) {
+			alert('회원 정보가 없습니다.');
+			return false;
+		}
+		return true;
+	};
 });
 //]]>
 </script>

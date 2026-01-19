@@ -23,11 +23,6 @@
 					</div>
 				@endif
 				<div class="con">
-					@if($gallery->thumbnail)
-						<div class="gallery_image">
-							<img src="{{ asset('storage/' . $gallery->thumbnail) }}" alt="{{ $gallery->title }}">
-						</div>
-					@endif
 					{!! $gallery->content !!}
 				</div>
 			</div>

@@ -416,7 +416,12 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <input type="text" class="board-form-control" placeholder="보완요청 내용" style="display: inline-block; width: auto; margin-right: 5px;">
+                                            <input type="text" 
+                                                   name="supplement_request[{{ $document->id }}]" 
+                                                   class="board-form-control" 
+                                                   placeholder="보완요청 내용" 
+                                                   value="{{ old('supplement_request.' . $document->id, $document->supplement_request_content) }}"
+                                                   style="display: inline-block; width: auto; margin-right: 5px;">
                                             <button type="button" class="btn btn-sm btn-warning">보완요청</button>
                                         </td>
                                     </tr>

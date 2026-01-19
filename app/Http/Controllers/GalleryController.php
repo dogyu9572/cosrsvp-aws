@@ -183,7 +183,7 @@ class GalleryController extends Controller
                 return $matches;
             });
 
-            // 데이터 변환
+            // 데이터 변환 (영문 필드 추출)
             $transformedGalleries = $filteredGalleries->map(function ($gallery) {
                 $attachments = [];
                 if ($gallery->attachments) {
@@ -193,10 +193,18 @@ class GalleryController extends Controller
                     }
                 }
 
+                // custom_fields에서 영문 제목/내용 추출
+                $customFields = json_decode($gallery->custom_fields ?? '{}', true);
+                if (!is_array($customFields)) {
+                    $customFields = [];
+                }
+                $englishTitle = $customFields['title_en'] ?? $gallery->title;
+                $englishContent = $customFields['content_en'] ?? $gallery->content;
+
                 return (object) [
                     'id' => $gallery->id,
-                    'title' => $gallery->title,
-                    'content' => $gallery->content,
+                    'title' => $englishTitle,
+                    'content' => $englishContent,
                     'thumbnail' => $gallery->thumbnail,
                     'attachments' => $attachments,
                     'created_at' => $gallery->created_at,
@@ -310,10 +318,18 @@ class GalleryController extends Controller
                 }
             }
 
+            // custom_fields에서 영문 제목/내용 추출
+            $customFields = json_decode($gallery->custom_fields ?? '{}', true);
+            if (!is_array($customFields)) {
+                $customFields = [];
+            }
+            $englishTitle = $customFields['title_en'] ?? $gallery->title;
+            $englishContent = $customFields['content_en'] ?? $gallery->content;
+
             return (object) [
                 'id' => $gallery->id,
-                'title' => $gallery->title,
-                'content' => $gallery->content,
+                'title' => $englishTitle,
+                'content' => $englishContent,
                 'thumbnail' => $gallery->thumbnail,
                 'attachments' => $attachments,
                 'view_count' => $gallery->view_count,
