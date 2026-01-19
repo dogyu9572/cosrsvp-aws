@@ -8,6 +8,7 @@ use App\Models\Popup;
 use App\Models\Banner;
 use App\Models\Member;
 use App\Models\MemberDocument;
+use App\Models\Country;
 use App\Services\ExchangeRateService;
 use App\Services\WeatherService;
 use Illuminate\Support\Facades\DB;
@@ -57,11 +58,23 @@ class HomeController extends Controller
         $memberId = $member['id'] ?? null;
         $memberModel = null;
         $memberDocuments = collect();
+        $countryDocument = null;
         if ($memberId) {
             $memberModel = Member::find($memberId);
             $memberDocuments = MemberDocument::where('member_id', $memberId)
                 ->orderBy('submission_deadline', 'asc')
                 ->get();
+            
+            // 회원의 국가 정보에서 서류명, 제출마감일 조회
+            if ($memberModel && $memberModel->country_id) {
+                $country = Country::find($memberModel->country_id);
+                if ($country) {
+                    $countryDocument = (object) [
+                        'document_name' => $country->document_name,
+                        'submission_deadline' => $country->submission_deadline,
+                    ];
+                }
+            }
         }
         
         // 활성화된 팝업 조회 (쿠키 확인하여 숨겨진 팝업 제외)
@@ -82,7 +95,7 @@ class HomeController extends Controller
             ->ordered()
             ->get();
         
-        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners', 'schedules', 'memberDocuments', 'memberId', 'memberModel'));
+        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners', 'schedules', 'memberDocuments', 'memberId', 'memberModel', 'countryDocument'));
     }
     
     /**

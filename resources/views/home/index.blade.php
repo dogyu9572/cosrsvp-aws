@@ -42,7 +42,7 @@
 					<p class="c_red">*Please check your flight ticket before entering the country.</p>
 				</div>
 				<div class="wbox left_half">
-					<div class="itit s ico_alert">Enter Personal Information<a href="{{ route('home') }}" class="btn">Enter</a></div>
+					<div class="itit s ico_alert">Enter Personal Information<a href="{{ route('mypage') }}" class="btn">Enter</a></div>
 					<div class="alert_area">
 						<p>For smooth project progress, please enter your personal information on My Page.</p>
 					</div>
@@ -71,43 +71,63 @@
 							</tr>
 						</thead>
 						<tbody>
-							@if($memberDocuments && $memberDocuments->count() > 0)
-								@foreach($memberDocuments as $document)
-								<tr>
-									<td>
-										@if($document->status == 'submitted')
-											<strong class="state submitted">제출완료</strong>
-										@elseif($document->status == 'not_submitted')
-											<strong class="state not_submitted">미제출</strong>
-										@elseif($document->status == 'supplement_requested')
-											<strong class="state supplement_requested">보완요청</strong>
-										@elseif($document->status == 'resubmitted')
-											<strong class="state resubmitted">재제출완료</strong>
-										@else
-											<strong class="state not_submitted">미제출</strong>
-										@endif
-									</td>
-									<td>{{ $document->document_name }}</td>
-									<td>{{ $document->submission_deadline ? $document->submission_deadline->format('Y-m-d') : '' }}</td>
-									<td><a href="{{ route('note.show') }}" class="btn" onclick="return checkNotesLink({{ $memberId }});">Confirm</a></td>
-									<td>
-										<button type="button" onclick="showSupplementReason({{ $document->id }}, '{{ $document->supplement_request_content ? addslashes($document->supplement_request_content) : '' }}');" class="btn">Confirm</button>
-									</td>
-									<td>
-										<button type="button" onclick="showDocumentUpload({{ $document->id }}, '{{ addslashes($document->document_name) }}');" class="btn">Supplement</button>
-									</td>
-								</tr>
-								@endforeach
-							@else
+							@php
+								// MemberDocument가 있으면 MemberDocument 사용, 없으면 Country 정보 사용
+								$memberDocument = $memberDocuments && $memberDocuments->count() > 0 ? $memberDocuments->first() : null;
+								$displayDocument = $memberDocument ?: $countryDocument;
+								$documentName = $memberDocument ? $memberDocument->document_name : ($countryDocument ? $countryDocument->document_name : null);
+								$submissionDeadline = $memberDocument ? $memberDocument->submission_deadline : ($countryDocument ? $countryDocument->submission_deadline : null);
+							@endphp
 							<tr>
-								<td><strong class="state not_submitted">-</strong></td>
-								<td>-</td>
-								<td>-</td>
+								<td>
+									@if($memberDocument)
+										@if($memberDocument->status == 'submitted' || $memberDocument->status == 'resubmitted')
+											<strong class="state submitted">Submission</strong>
+										@elseif($memberDocument->status == 'supplement_requested')
+											<strong class="state back">Rejection</strong>
+										@elseif($memberDocument->status == 'not_submitted')
+											<strong class="state not_submitted">Not submitted</strong>
+										@else
+											<strong class="state not_submitted">Not submitted</strong>
+										@endif
+									@else
+										<strong class="state not_submitted">Not submitted</strong>
+									@endif
+								</td>
+								<td>
+									@if($documentName)
+										{{ $documentName }}
+									@else
+										-
+									@endif
+								</td>
+								<td>
+									@if($submissionDeadline)
+										@if($submissionDeadline instanceof \Carbon\Carbon)
+											{{ $submissionDeadline->format('Y-m-d') }}
+										@else
+											{{ \Carbon\Carbon::parse($submissionDeadline)->format('Y-m-d') }}
+										@endif
+									@else
+										-
+									@endif
+								</td>
 								<td><a href="{{ route('note.show') }}" class="btn" onclick="return checkNotesLink({{ $memberId ?? 0 }});">Confirm</a></td>
-								<td><button type="button" onclick="showSupplementReason(0, '');" class="btn">Confirm</button></td>
-								<td><button type="button" onclick="showDocumentUpload(0, '');" class="btn">Supplement</button></td>
+								<td>
+									@if($memberDocument && $memberDocument->id)
+										<button type="button" onclick="showSupplementReason({{ $memberDocument->id }}, '{{ $memberDocument->supplement_request_content ? addslashes($memberDocument->supplement_request_content) : '' }}');" class="btn">Confirm</button>
+									@else
+										<button type="button" onclick="showSupplementReason(0, '');" class="btn">Confirm</button>
+									@endif
+								</td>
+								<td>
+									@if($memberDocument && $memberDocument->id)
+										<button type="button" onclick="showDocumentUpload({{ $memberDocument->id }}, '{{ $documentName ? addslashes($documentName) : '' }}');" class="btn">Supplement</button>
+									@else
+										<button type="button" onclick="showDocumentUpload(0, '{{ $documentName ? addslashes($documentName) : '' }}');" class="btn">Supplement</button>
+									@endif
+								</td>
 							</tr>
-							@endif
 						</tbody>
 					</table>
 				</div>

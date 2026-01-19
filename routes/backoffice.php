@@ -245,6 +245,8 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
     // 프로젝트 기수 관리
     Route::post('project-terms/update-order', [ProjectTermController::class, 'updateOrder'])
         ->name('backoffice.project-terms.update-order');
+    Route::get('project-terms/reference-materials', [ProjectTermController::class, 'getReferenceMaterials'])
+        ->name('backoffice.project-terms.reference-materials');
     Route::resource('project-terms', ProjectTermController::class, [
         'names' => 'backoffice.project-terms'
     ])->except(['create']);
@@ -334,6 +336,10 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
         ->name('backoffice.members.download-ticket-file');
     Route::post('members/{member}/delete-ticket-file', [App\Http\Controllers\Backoffice\MemberController::class, 'deleteTicketFile'])
         ->name('backoffice.members.delete-ticket-file');
+    Route::post('members/{member}/supplement-request', [App\Http\Controllers\Backoffice\MemberController::class, 'supplementRequest'])
+        ->name('backoffice.members.supplement-request');
+    Route::post('members/{member}/complete-request', [App\Http\Controllers\Backoffice\MemberController::class, 'completeRequest'])
+        ->name('backoffice.members.complete-request');
     Route::resource('members', App\Http\Controllers\Backoffice\MemberController::class, [
         'names' => 'backoffice.members'
     ]);

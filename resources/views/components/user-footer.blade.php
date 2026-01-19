@@ -31,18 +31,18 @@
 				<div class="gray_box">
 					<div class="box">
 						<div class="tit">Training Institute Contact Person</div>
-						<div class="name"><strong>Noh Yeon</strong> Research Professor</div>
+						<div class="name"><strong>{{ $kofhiManagerName }}</strong> Research Professor</div>
 						<ul>
-							<li class="email">rohyoun@inje.ac.kr</li>
-							<li class="tel">010-4660-9460</li>
+							<li class="email">{{ $kofhiManagerEmail }}</li>
+							<li class="tel">{{ $kofhiManagerPhone }}</li>
 						</ul>
 					</div>
 					<div class="box">
 						<div class="tit">Cosmogene Contact Person</div>
-						<div class="name"><strong>Kim Young-hee</strong> Professional</div>
+						<div class="name"><strong>{{ $cosmojinManagerName }}</strong> Professional</div>
 						<ul>
-							<li class="email">staff2@email.com</li>
-							<li class="tel">010-1111-2222</li>
+							<li class="email">{{ $cosmojinManagerEmail }}</li>
+							<li class="tel">{{ $cosmojinManagerPhone }}</li>
 						</ul>
 					</div>
 				</div>

@@ -13,6 +13,7 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
+    loadReferenceMaterials();
 });
 
 // 이벤트 리스너 초기화
@@ -1340,7 +1341,25 @@ function showEditForm(type, data) {
         if (form) {
             document.getElementById('editCountryNameKo').value = data.name_ko || '';
             document.getElementById('editCountryNameEn').value = data.name_en || '';
-            document.getElementById('editCountryReferenceMaterial').value = data.reference_material_id || '';
+            // 참고자료 목록 로드 후 선택값 설정
+            loadReferenceMaterials().then(() => {
+                document.getElementById('editCountryReferenceMaterial').value = data.reference_material_id || '';
+            });
+            document.getElementById('editCountryDocumentName').value = data.document_name || '';
+            // 제출마감일 형식 변환 (YYYY-MM-DD 형식으로)
+            if (data.submission_deadline) {
+                const deadlineDate = new Date(data.submission_deadline);
+                if (!isNaN(deadlineDate.getTime())) {
+                    const year = deadlineDate.getFullYear();
+                    const month = String(deadlineDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(deadlineDate.getDate()).padStart(2, '0');
+                    document.getElementById('editCountrySubmissionDeadline').value = `${year}-${month}-${day}`;
+                } else {
+                    document.getElementById('editCountrySubmissionDeadline').value = '';
+                }
+            } else {
+                document.getElementById('editCountrySubmissionDeadline').value = '';
+            }
             const hiddenId = form.querySelector('input[name="id"]');
             if (hiddenId) hiddenId.value = data.id;
         }
@@ -1383,4 +1402,48 @@ function showEditForm(type, data) {
             orderControls.style.display = 'none';
         }
     }
+}
+
+// 참고자료 목록 로드
+function loadReferenceMaterials() {
+    return fetch('/backoffice/project-terms/reference-materials', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success && result.data) {
+                const select = document.getElementById('editCountryReferenceMaterial');
+                if (select) {
+                    // 기존 옵션 유지 (첫 번째 "선택하세요" 옵션)
+                    const firstOption = select.querySelector('option[value=""]');
+                    select.innerHTML = '';
+                    if (firstOption) {
+                        select.appendChild(firstOption);
+                    } else {
+                        const defaultOption = document.createElement('option');
+                        defaultOption.value = '';
+                        defaultOption.textContent = '선택하세요';
+                        select.appendChild(defaultOption);
+                    }
+                    
+                    // 참고자료 목록 추가
+                    result.data.forEach(reference => {
+                        const option = document.createElement('option');
+                        option.value = reference.id;
+                        option.textContent = reference.title || `참고자료 #${reference.id}`;
+                        select.appendChild(option);
+                    });
+                }
+            }
+            return result;
+        })
+        .catch(error => {
+            console.error('참고자료 목록 로드 실패:', error);
+            return { success: false };
+        });
 }

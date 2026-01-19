@@ -112,13 +112,26 @@ class MemberController extends Controller
         $projectPeriods = ProjectPeriod::active()->orderBy('display_order')->get();
         $countries = Country::active()->orderBy('display_order')->get();
 
+        // 회원의 국가 정보에서 서류명, 제출마감일 조회
+        $countryDocument = null;
+        if ($member->country_id) {
+            $country = Country::find($member->country_id);
+            if ($country) {
+                $countryDocument = (object) [
+                    'document_name' => $country->document_name,
+                    'submission_deadline' => $country->submission_deadline,
+                ];
+            }
+        }
+
         return view('backoffice.members.edit', compact(
             'member',
             'projectTerms',
             'courses',
             'operatingInstitutions',
             'projectPeriods',
-            'countries'
+            'countries',
+            'countryDocument'
         ));
     }
 
@@ -302,6 +315,84 @@ class MemberController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => '파일 삭제 중 오류가 발생했습니다.'
+            ], 500);
+        }
+    }
+
+    /**
+     * 보완요청 처리 (AJAX)
+     */
+    public function supplementRequest(Request $request, $id)
+    {
+        $member = Member::findOrFail($id);
+        
+        $request->validate([
+            'document_id' => 'required|exists:member_documents,id',
+            'supplement_content' => 'required|string',
+        ]);
+
+        try {
+            $document = MemberDocument::findOrFail($request->document_id);
+            
+            // 회원의 문서인지 확인
+            if ($document->member_id != $member->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '권한이 없습니다.'
+                ], 403);
+            }
+
+            // 보완요청 내용 저장 및 상태 변경
+            $document->supplement_request_content = trim($request->supplement_content);
+            $document->status = 'supplement_requested';
+            $document->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => '보완요청이 완료되었습니다.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '보완요청 중 오류가 발생했습니다.'
+            ], 500);
+        }
+    }
+
+    /**
+     * 완료 처리 (AJAX)
+     */
+    public function completeRequest(Request $request, $id)
+    {
+        $member = Member::findOrFail($id);
+        
+        $request->validate([
+            'document_id' => 'required|exists:member_documents,id',
+        ]);
+
+        try {
+            $document = MemberDocument::findOrFail($request->document_id);
+            
+            // 회원의 문서인지 확인
+            if ($document->member_id != $member->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '권한이 없습니다.'
+                ], 403);
+            }
+
+            // 상태를 submitted로 변경
+            $document->status = 'submitted';
+            $document->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => '완료 처리되었습니다.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '완료 처리 중 오류가 발생했습니다.'
             ], 500);
         }
     }

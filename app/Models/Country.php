@@ -16,6 +16,8 @@ class Country extends Model
         'name_ko',
         'name_en',
         'reference_material_id',
+        'document_name',
+        'submission_deadline',
         'display_order',
         'is_active',
     ];
@@ -23,6 +25,7 @@ class Country extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'display_order' => 'integer',
+        'submission_deadline' => 'date',
     ];
 
     /**
@@ -39,6 +42,22 @@ class Country extends Model
     public function schedules(): HasMany
     {
         return $this->hasMany(Schedule::class)->orderBy('display_order');
+    }
+
+    /**
+     * 이 국가의 참고자료
+     */
+    public function referenceMaterial()
+    {
+        if (!$this->reference_material_id) {
+            return null;
+        }
+        
+        // board_references 테이블에서 게시글 조회
+        return \Illuminate\Support\Facades\DB::table('board_references')
+            ->where('id', $this->reference_material_id)
+            ->whereNull('deleted_at')
+            ->first();
     }
 
     /**

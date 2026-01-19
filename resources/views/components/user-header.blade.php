@@ -1,7 +1,5 @@
 @php
 $member = session('member', null);
-$memberName = $member['name'] ?? 'Hong Gil-dong';
-$memberAffiliation = $member['affiliation'] ?? 'Basic Medicine_Korea University';
 @endphp
 
 <div class="header">

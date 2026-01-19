@@ -154,4 +154,27 @@ class ProjectTermController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * 참고자료 목록 조회 (AJAX)
+     */
+    public function getReferenceMaterials(Request $request)
+    {
+        try {
+            $references = \Illuminate\Support\Facades\DB::table('board_references')
+                ->whereNull('deleted_at')
+                ->orderBy('created_at', 'desc')
+                ->get(['id', 'title', 'created_at']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $references
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '참고자료 목록 조회 중 오류가 발생했습니다.'
+            ], 500);
+        }
+    }
 }

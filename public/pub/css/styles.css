@@ -111,13 +111,11 @@
 	.tbl thead th:first-child:before {border-radius:4px 0 0 0;}
 	.tbl thead th:last-child:before {border-radius:0 4px 0 0; width:100%;}
 	.tbl tbody td {position:relative; word-break:break-word;}
-	.tbl tbody td .state {display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:0 6px; font-size:13px; font-weight:600; line-height:22px; height:24px; padding:0 8px; border-radius:4px;}
+	.tbl tbody td .state {display:flex; justify-content:center; align-items:center; flex-wrap:nowrap; gap:0 6px; font-size:13px; font-weight:600; line-height:22px; height:24px; padding:0 8px; border-radius:4px; white-space:nowrap;}
 	.tbl tbody td .state:before {content:""; width:16px; aspect-ratio:1/1; border-radius:50%; background:no-repeat 50% 50% / contain;}
+	.tbl tbody td .state.submitted {color:#2e7d32;}
+	.tbl tbody td .state.not_submitted {color:#616161;}
 	.tbl tbody td .back:before {background-image:url('/pub/images/icon_ne.svg');}
-	.tbl tbody td .state.submitted {color:#2e7d32; background:#e8f5e9;}
-	.tbl tbody td .state.not_submitted {color:#616161; background:#fafafa;}
-	.tbl tbody td .state.supplement_requested {color:#e65100; background:#fff3e0;}
-	.tbl tbody td .state.resubmitted {color:#0277bd; background:#e1f5fe;}
 	.tbl tbody td .btn {display:block; font-size:13px; font-weight:500; line-height:22px; height:24px; width:auto; min-width:100%; padding:0 5px; text-align:center; border:#ddd 1px solid; border-radius:4px; margin:0 auto;}
 	/* 회원 */
 	.tbl tbody td.state i {display:flex; justify-content:center; align-items:center; gap:4px; font-size:15px; font-weight:700; line-height:25px; height:25px; width:100%; border-radius:4px;}

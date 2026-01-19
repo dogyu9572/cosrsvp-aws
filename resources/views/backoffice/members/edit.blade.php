@@ -388,48 +388,99 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($member->documents as $document)
-                                    <tr>
-                                        <td>{{ $document->document_name }}</td>
+                                @if($member->documents && $member->documents->count() > 0)
+                                    @foreach($member->documents as $document)
+                                        <tr>
+                                            <td>{{ $document->document_name }}</td>
+                                            <td>
+                                                @if($document->file_path)
+                                                    <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank">
+                                                        {{ basename($document->file_path) }}
+                                                    </a>
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td>{{ $document->submission_deadline?->format('Y.m.d') }}</td>
+                                            <td>{{ $document->submitted_at?->format('Y.m.d') }}</td>
                                         <td>
-                                            @if($document->file_path)
-                                                <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank">
-                                                    {{ basename($document->file_path) }}
-                                                </a>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td>{{ $document->submission_deadline?->format('Y.m.d') }}</td>
-                                        <td>{{ $document->submitted_at?->format('Y.m.d') }}</td>
-                                        <td>
-                                            <span class="status-badge status-{{ $document->status }}">
-                                                @if($document->status == 'submitted')
-                                                    제출완료
-                                                @elseif($document->status == 'not_submitted')
-                                                    미제출
+                                            <span class="status-badge status-{{ $document->status }}" id="status_badge_{{ $document->id }}">
+                                                @if($document->status == 'submitted' || $document->status == 'resubmitted')
+                                                    Submission
                                                 @elseif($document->status == 'supplement_requested')
-                                                    보완요청
-                                                @elseif($document->status == 'resubmitted')
-                                                    재제출완료
+                                                    Rejection
+                                                @else
+                                                    Not submitted
                                                 @endif
                                             </span>
                                         </td>
-                                        <td>
-                                            <input type="text" 
-                                                   name="supplement_request[{{ $document->id }}]" 
-                                                   class="board-form-control" 
-                                                   placeholder="보완요청 내용" 
-                                                   value="{{ old('supplement_request.' . $document->id, $document->supplement_request_content) }}"
-                                                   style="display: inline-block; width: auto; margin-right: 5px;">
-                                            <button type="button" class="btn btn-sm btn-warning">보완요청</button>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center">등록된 서류가 없습니다.</td>
-                                    </tr>
-                                @endforelse
+                                            <td>
+                                                @if($document->status == 'supplement_requested')
+                                                    <input type="text" 
+                                                           id="supplement_input_{{ $document->id }}"
+                                                           class="board-form-control supplement-input" 
+                                                           placeholder="보완요청 내용" 
+                                                           value="{{ old('supplement_request.' . $document->id, $document->supplement_request_content) }}"
+                                                           data-document-id="{{ $document->id }}"
+                                                           style="display: inline-block; width: auto; margin-right: 5px;"
+                                                           readonly>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-success complete-request-btn" 
+                                                            data-document-id="{{ $document->id }}"
+                                                            data-member-id="{{ $member->id }}">완료 처리</button>
+                                                @else
+                                                    <input type="text" 
+                                                           id="supplement_input_{{ $document->id }}"
+                                                           class="board-form-control supplement-input" 
+                                                           placeholder="보완요청 내용" 
+                                                           value="{{ old('supplement_request.' . $document->id, $document->supplement_request_content) }}"
+                                                           data-document-id="{{ $document->id }}"
+                                                           style="display: inline-block; width: auto; margin-right: 5px;">
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-warning supplement-request-btn" 
+                                                            data-document-id="{{ $document->id }}"
+                                                            data-member-id="{{ $member->id }}">보완요청</button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @else
+                                    @if($countryDocument && ($countryDocument->document_name || $countryDocument->submission_deadline))
+                                        <tr>
+                                            <td>{{ $countryDocument->document_name ?? '-' }}</td>
+                                            <td>-</td>
+                                            <td>
+                                                @if($countryDocument->submission_deadline)
+                                                    @if($countryDocument->submission_deadline instanceof \Carbon\Carbon)
+                                                        {{ $countryDocument->submission_deadline->format('Y.m.d') }}
+                                                    @else
+                                                        {{ \Carbon\Carbon::parse($countryDocument->submission_deadline)->format('Y.m.d') }}
+                                                    @endif
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td>-</td>
+                                            <td>
+                                                <span class="status-badge status-not_submitted">Not submitted</span>
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       name="supplement_request[0]" 
+                                                       class="board-form-control" 
+                                                       placeholder="보완요청 내용" 
+                                                       value=""
+                                                       style="display: inline-block; width: auto; margin-right: 5px;"
+                                                       disabled>
+                                                <button type="button" class="btn btn-sm btn-warning" disabled>보완요청</button>
+                                            </td>
+                                        </tr>
+                                    @else
+                                        <tr>
+                                            <td colspan="6" class="text-center">등록된 서류가 없습니다.</td>
+                                        </tr>
+                                    @endif
+                                @endif
                             </tbody>
                         </table>
                     </div>
@@ -536,6 +587,132 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('파일 삭제 중 오류가 발생했습니다.');
             });
         });
+    });
+
+    // 보완요청 버튼 클릭 이벤트
+    const supplementButtons = document.querySelectorAll('.supplement-request-btn');
+    
+    supplementButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const documentId = this.getAttribute('data-document-id');
+            const memberId = this.getAttribute('data-member-id');
+            const input = document.getElementById('supplement_input_' + documentId);
+            const supplementContent = input ? input.value.trim() : '';
+            
+            if (!supplementContent) {
+                alert('보완요청 내용을 입력해주세요.');
+                return;
+            }
+            
+            if (!confirm('보완요청을 하시겠습니까?')) {
+                return;
+            }
+            
+            const btn = this;
+            btn.disabled = true;
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+            
+            fetch('{{ route("backoffice.members.supplement-request", ":member") }}'.replace(':member', memberId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    document_id: documentId,
+                    supplement_content: supplementContent
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 상태 배지 업데이트
+                    const statusBadge = document.getElementById('status_badge_' + documentId);
+                    if (statusBadge) {
+                        statusBadge.className = 'status-badge status-supplement_requested';
+                        statusBadge.textContent = 'Rejection';
+                    }
+                    // 보완요청 버튼을 완료 처리 버튼으로 변경
+                    const input = document.getElementById('supplement_input_' + documentId);
+                    if (input) {
+                        input.readOnly = true;
+                    }
+                    btn.className = 'btn btn-sm btn-success complete-request-btn';
+                    btn.textContent = '완료 처리';
+                    btn.disabled = false;
+                    alert('보완요청이 완료되었습니다.');
+                } else {
+                    alert(data.message || '보완요청에 실패했습니다.');
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('보완요청 중 오류가 발생했습니다.');
+                btn.disabled = false;
+            });
+        });
+    });
+
+    // 완료 처리 버튼 클릭 이벤트 (이벤트 위임 사용)
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('complete-request-btn')) {
+            const button = e.target;
+            const documentId = button.getAttribute('data-document-id');
+            const memberId = button.getAttribute('data-member-id');
+            
+            if (!confirm('완료 처리하시겠습니까?')) {
+                return;
+            }
+            
+            const btn = button;
+            btn.disabled = true;
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+            
+            fetch('{{ route("backoffice.members.complete-request", ":member") }}'.replace(':member', memberId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    document_id: documentId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 상태 배지 업데이트
+                    const statusBadge = document.getElementById('status_badge_' + documentId);
+                    if (statusBadge) {
+                        statusBadge.className = 'status-badge status-submitted';
+                        statusBadge.textContent = 'Submission';
+                    }
+                    // 완료 처리 버튼을 보완요청 버튼으로 변경
+                    const input = document.getElementById('supplement_input_' + documentId);
+                    if (input) {
+                        input.readOnly = false;
+                        input.value = '';
+                    }
+                    btn.className = 'btn btn-sm btn-warning supplement-request-btn';
+                    btn.textContent = '보완요청';
+                    btn.disabled = false;
+                    alert('완료 처리되었습니다.');
+                } else {
+                    alert(data.message || '완료 처리에 실패했습니다.');
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('완료 처리 중 오류가 발생했습니다.');
+                btn.disabled = false;
+            });
+        }
     });
 });
 </script>

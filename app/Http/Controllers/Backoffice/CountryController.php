@@ -25,7 +25,9 @@ class CountryController extends Controller
             'project_period_id' => 'required|exists:project_periods,id',
             'name_ko' => 'required|string|max:100',
             'name_en' => 'nullable|string|max:100',
-            'reference_material_id' => 'nullable|exists:reference_materials,id',
+            'reference_material_id' => 'nullable|integer',
+            'document_name' => 'nullable|string|max:255',
+            'submission_deadline' => 'nullable|date',
         ]);
 
         try {
@@ -52,7 +54,9 @@ class CountryController extends Controller
         $validated = $request->validate([
             'name_ko' => 'required|string|max:100',
             'name_en' => 'nullable|string|max:100',
-            'reference_material_id' => 'nullable|exists:reference_materials,id',
+            'reference_material_id' => 'nullable|integer',
+            'document_name' => 'nullable|string|max:255',
+            'submission_deadline' => 'nullable|date',
         ]);
 
         try {

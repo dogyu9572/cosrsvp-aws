@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\AdminMenu;
 use App\Models\Setting;
+use App\Models\Course;
+use App\Models\OperatingInstitution;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Request;
@@ -89,6 +91,81 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('mainMenus', $mainMenus);
             });
         }
+
+        // 사용자 헤더/푸터 공통 데이터 바인딩
+        View::composer(['components.user-header', 'components.user-footer'], function ($view) {
+            $member = session('member', null);
+            
+            // 회원 기본 정보
+            $memberName = $member['name'] ?? 'Hong Gil-dong';
+            $memberAffiliation = 'Basic Medicine_Korea University'; // 기본값
+            
+            // 담당자 정보 기본값
+            $kofhiManagerName = 'Noh Yeon';
+            $kofhiManagerPhone = '010-4660-9460';
+            $kofhiManagerEmail = 'rohyoun@inje.ac.kr';
+            $cosmojinManagerName = 'Kim Young-hee';
+            $cosmojinManagerPhone = '010-1111-2222';
+            $cosmojinManagerEmail = 'staff2@email.com';
+            
+            // 과정_운영기관 정보 조회
+            $course = null;
+            $operatingInstitution = null;
+            
+            if ($member && isset($member['course_id'])) {
+                $course = Course::find($member['course_id']);
+            }
+            
+            if ($member && isset($member['operating_institution_id'])) {
+                $operatingInstitution = OperatingInstitution::find($member['operating_institution_id']);
+            }
+            
+            // 과정_운영기관 정보로 소속 설정
+            if ($course && $operatingInstitution) {
+                $courseName = $course->name_en ?: $course->name_ko;
+                $institutionName = $operatingInstitution->name_en ?: $operatingInstitution->name_ko;
+                $memberAffiliation = $courseName . '_' . $institutionName;
+            } elseif ($course) {
+                $memberAffiliation = $course->name_en ?: $course->name_ko;
+            } elseif ($operatingInstitution) {
+                $memberAffiliation = $operatingInstitution->name_en ?: $operatingInstitution->name_ko;
+            } elseif ($member && isset($member['affiliation'])) {
+                $memberAffiliation = $member['affiliation'];
+            }
+            
+            // 운영기관 담당자 정보 설정
+            if ($operatingInstitution) {
+                if ($operatingInstitution->kofhi_manager_name) {
+                    $kofhiManagerName = $operatingInstitution->kofhi_manager_name;
+                }
+                if ($operatingInstitution->kofhi_manager_phone) {
+                    $kofhiManagerPhone = $operatingInstitution->kofhi_manager_phone;
+                }
+                if ($operatingInstitution->kofhi_manager_email) {
+                    $kofhiManagerEmail = $operatingInstitution->kofhi_manager_email;
+                }
+                if ($operatingInstitution->cosmojin_manager_name) {
+                    $cosmojinManagerName = $operatingInstitution->cosmojin_manager_name;
+                }
+                if ($operatingInstitution->cosmojin_manager_phone) {
+                    $cosmojinManagerPhone = $operatingInstitution->cosmojin_manager_phone;
+                }
+                if ($operatingInstitution->cosmojin_manager_email) {
+                    $cosmojinManagerEmail = $operatingInstitution->cosmojin_manager_email;
+                }
+            }
+            
+            $view->with([
+                'memberName' => $memberName,
+                'memberAffiliation' => $memberAffiliation,
+                'kofhiManagerName' => $kofhiManagerName,
+                'kofhiManagerPhone' => $kofhiManagerPhone,
+                'kofhiManagerEmail' => $kofhiManagerEmail,
+                'cosmojinManagerName' => $cosmojinManagerName,
+                'cosmojinManagerPhone' => $cosmojinManagerPhone,
+                'cosmojinManagerEmail' => $cosmojinManagerEmail,
+            ]);
+        });
 
         // 쿼리 로깅 활성화 (디버깅용)
         if (config('app.debug')) {

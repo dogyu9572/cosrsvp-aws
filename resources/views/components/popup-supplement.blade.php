@@ -5,7 +5,7 @@
 		<div class="tit">Reason for supplementing documents</div>
 		<div class="scroll">
 			<div class="con gbox" id="supplement_content">
-				보완사유가 없습니다.
+				No supplement reason.
 			</div>
 			<button type="button" class="btn_clo" onclick="layerHide('pop_supplement');">Check</button>
 		</div>
@@ -13,10 +13,10 @@
 </div>
 
 <script>
-// 전역 함수: 보완요청 사유 표시
+// Global function: Display supplement request reason
 window.showSupplementReason = function(documentId, supplementContent) {
     if (!documentId || documentId === 0) {
-        alert('등록된 서류가 없습니다.');
+        alert('No document registered.');
         return;
     }
     
@@ -27,7 +27,7 @@ window.showSupplementReason = function(documentId, supplementContent) {
         const formattedContent = supplementContent.replace(/\n/g, '<br/>');
         $content.html(formattedContent);
     } else {
-        $content.html('보완사유가 없습니다.');
+        $content.html('No supplement reason.');
     }
     
     layerShow('pop_supplement');

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\MemberDocument;
+use App\Models\Member;
+use App\Models\Country;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -78,10 +80,23 @@ class MemberDocumentController extends Controller
 
                     $document->save();
                 } else {
-                    // 새 문서 생성
+                    // 새 문서 생성 - 국가 정보에서 서류명과 제출마감일 가져오기
+                    $memberModel = Member::find($member['id']);
+                    $documentName = 'Self-introduction';
+                    $submissionDeadline = null;
+                    
+                    if ($memberModel && $memberModel->country_id) {
+                        $country = Country::find($memberModel->country_id);
+                        if ($country) {
+                            $documentName = $country->document_name ?? 'Self-introduction';
+                            $submissionDeadline = $country->submission_deadline;
+                        }
+                    }
+                    
                     $document = MemberDocument::create([
                         'member_id' => $member['id'],
-                        'document_name' => 'Self-introduction',
+                        'document_name' => $documentName,
+                        'submission_deadline' => $submissionDeadline,
                         'file_path' => $filePath,
                         'submitted_at' => now(),
                         'status' => 'submitted',

@@ -402,6 +402,20 @@
                             </div>
                             <div class="board-form-row" style="margin-top: 1rem;">
                                 <div class="board-form-col">
+                                    <div class="board-form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <label for="editCountryDocumentName" class="board-form-label" style="margin: 0; min-width: 50px; font-weight: normal;">서류명:</label>
+                                        <input type="text" id="editCountryDocumentName" name="document_name" class="board-form-control" style="flex: 1; max-width: 400px;" placeholder="서류명을 입력하세요">
+                                    </div>
+                                </div>
+                                <div class="board-form-col">
+                                    <div class="board-form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <label for="editCountrySubmissionDeadline" class="board-form-label" style="margin: 0; min-width: 50px; font-weight: normal;">제출마감일:</label>
+                                        <input type="date" id="editCountrySubmissionDeadline" name="submission_deadline" class="board-form-control" style="flex: 1; max-width: 400px;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="board-form-row" style="margin-top: 1rem;">
+                                <div class="board-form-col">
                                     <div class="board-form-group">
                                         <div class="board-btn-group">
                                             <button type="submit" class="btn btn-primary">

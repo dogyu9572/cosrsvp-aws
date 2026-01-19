@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\MemberNote;
+use App\Models\Member;
+use App\Models\Country;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class NoteController extends Controller
 {
@@ -22,13 +24,30 @@ class NoteController extends Controller
         $gName = "Note";
         $sName = "";
 
-        // 로그인한 회원의 Note 조회 (회원 공유가 활성화된 것만)
-        $memberNote = MemberNote::where('member_id', $member['id'])
-            ->where('share_with_member', true)
-            ->with(['files'])
-            ->orderBy('created_at', 'desc')
-            ->first();
+        // 회원의 국가 정보를 통해 참고자료 조회
+        $referenceMaterial = null;
+        $memberModel = Member::find($member['id']);
+        if ($memberModel && $memberModel->country_id) {
+            $country = Country::find($memberModel->country_id);
+            if ($country && $country->reference_material_id) {
+                // board_references 테이블에서 참고자료 조회
+                $referenceMaterial = DB::table('board_references')
+                    ->where('id', $country->reference_material_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+                
+                // custom_fields에서 영문 제목/내용 추출
+                if ($referenceMaterial) {
+                    $customFields = json_decode($referenceMaterial->custom_fields ?? '{}', true);
+                    if (!is_array($customFields)) {
+                        $customFields = [];
+                    }
+                    $referenceMaterial->title = $customFields['title_en'] ?? $referenceMaterial->title;
+                    $referenceMaterial->content = $customFields['content_en'] ?? $referenceMaterial->content;
+                }
+            }
+        }
 
-        return view('note.show', compact('gNum', 'gName', 'sName', 'memberNote'));
+        return view('note.show', compact('gNum', 'gName', 'sName', 'referenceMaterial'));
     }
 }
