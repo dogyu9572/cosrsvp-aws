@@ -1,3 +1,10 @@
+@php
+$gNum = $gNum ?? "07";
+$sNum = $sNum ?? "01";
+$gName = $gName ?? "Contact Us";
+$sName = $sName ?? "Contact Us";
+@endphp
+
 @extends('layouts.user')
 
 @section('content')

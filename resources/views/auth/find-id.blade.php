@@ -4,11 +4,10 @@
 <div id="mainContent" class="container mem_wrap flex_center">
 	
 	<div class="inputs">
-		<div class="tit">find password</div>
-		<p class="tb tac">Once the information you entered is verified, <br class="pc_vw">a temporary password will be sent to the registered email address.</p>
+		<div class="tit">Find ID</div>
 		<div class="tab_area">
-			<a href="{{ route('find-id') }}">Find ID</a>
-			<a href="{{ route('find-pw') }}" class="on">find password</a>
+			<a href="{{ route('find-id') }}" class="on">Find ID</a>
+			<a href="{{ route('find-pw') }}">find password</a>
 		</div>
 		
 		@if ($errors->any())
@@ -19,13 +18,7 @@
 			</div>
 		@endif
 		
-		@if (session('status'))
-			<div style="background: #efe; border: 1px solid #cfc; border-radius: 6px; padding: 12px; margin-bottom: 20px; color: #060; font-size: 14px;">
-				<p style="margin: 0;">{{ session('status') }}</p>
-			</div>
-		@endif
-		
-		<form method="POST" action="{{ route('find-pw') }}">
+		<form method="POST" action="{{ route('find-id') }}">
 			@csrf
 			
 			<div class="tt">Name<span class="c_red">*</span></div>

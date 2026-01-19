@@ -201,7 +201,7 @@
                             </div>
                             <div class="board-form-group">
                                 <label for="passport_expiry" class="board-form-label">여권유효기간</label>
-                                <input type="month" id="passport_expiry" name="passport_expiry" class="board-form-control" value="{{ old('passport_expiry', $member->passport_expiry?->format('Y-m')) }}" tabindex="18">
+                                <input type="date" id="passport_expiry" name="passport_expiry" class="board-form-control" value="{{ old('passport_expiry', $member->passport_expiry?->format('Y-m-d')) }}" tabindex="18">
                             </div>
                             <div class="board-form-group">
                                 <label for="alien_registration_number" class="board-form-label">외국인등록번호</label>
@@ -209,7 +209,7 @@
                             </div>
                             <div class="board-form-group">
                                 <label for="alien_registration_expiry" class="board-form-label">외국인등록증 유효기간</label>
-                                <input type="month" id="alien_registration_expiry" name="alien_registration_expiry" class="board-form-control" value="{{ old('alien_registration_expiry', $member->alien_registration_expiry?->format('Y-m')) }}" tabindex="22">
+                                <input type="date" id="alien_registration_expiry" name="alien_registration_expiry" class="board-form-control" value="{{ old('alien_registration_expiry', $member->alien_registration_expiry?->format('Y-m-d')) }}" tabindex="22">
                             </div>
                         </div>
                         <div class="board-form-col">

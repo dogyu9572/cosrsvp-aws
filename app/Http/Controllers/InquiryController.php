@@ -22,6 +22,7 @@ class InquiryController extends Controller
         }
 
         $gNum = "07";
+        $sNum = "01";
         $gName = "Contact Us";
         $sName = "Contact Us";
 
@@ -37,7 +38,7 @@ class InquiryController extends Controller
         // 문의 데이터 조회 (프로젝트 기수 필터링 적용)
         $inquiries = $this->getInquiriesByProjectTerm($request, $memberProjectInfo);
 
-        return view('inquiry.index', compact('gNum', 'gName', 'sName', 'inquiries'));
+        return view('inquiry.index', compact('gNum', 'sNum', 'gName', 'sName', 'inquiries'));
     }
 
     /**
@@ -52,6 +53,7 @@ class InquiryController extends Controller
         }
 
         $gNum = "07";
+        $sNum = "01";
         $gName = "Contact Us";
         $sName = "Contact Us";
 
@@ -71,7 +73,7 @@ class InquiryController extends Controller
             abort(404, '문의사항을 찾을 수 없습니다.');
         }
 
-        return view('inquiry.show', compact('gNum', 'gName', 'sName', 'inquiry'));
+        return view('inquiry.show', compact('gNum', 'sNum', 'gName', 'sName', 'inquiry'));
     }
 
     /**
@@ -86,10 +88,11 @@ class InquiryController extends Controller
         }
 
         $gNum = "07";
+        $sNum = "01";
         $gName = "Contact Us";
         $sName = "Contact Us";
 
-        return view('inquiry.create', compact('gNum', 'gName', 'sName'));
+        return view('inquiry.create', compact('gNum', 'sNum', 'gName', 'sName'));
     }
 
     /**

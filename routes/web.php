@@ -11,6 +11,9 @@ use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\InquiryController;
+use App\Http\Controllers\FindIdController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AlarmController;
 use App\Http\Controllers\Backoffice\PopupController;
 
 // =============================================================================
@@ -49,6 +52,23 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])
     ->name('logout');
+
+// 아이디 찾기
+Route::get('/find-id', [FindIdController::class, 'showForm'])->name('find-id');
+Route::post('/find-id', [FindIdController::class, 'findId']);
+Route::get('/find-id/result', [FindIdController::class, 'showResult'])->name('find-id.result');
+
+// 비밀번호 찾기
+Route::get('/find-pw', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('find-pw');
+Route::post('/find-pw', [ForgotPasswordController::class, 'sendResetLinkEmail']);
+
+// 마이페이지 (로그인 필수)
+Route::get('/mypage', [UserController::class, 'mypage'])->name('mypage');
+Route::post('/mypage', [UserController::class, 'update'])->name('mypage.update');
+
+// 알람 페이지 (로그인 필수)
+Route::get('/alarms', [AlarmController::class, 'index'])->name('alarms');
+Route::get('/alarms/{id}', [AlarmController::class, 'show'])->name('alarms.show');
 
 // 인증 관련 라우트
 Route::prefix('auth')->name('auth.')->group(function () {

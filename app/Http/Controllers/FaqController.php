@@ -20,13 +20,14 @@ class FaqController extends Controller
         }
 
         $gNum = "07";
+        $sNum = "02";
         $gName = "Contact Us";
         $sName = "FAQ";
 
         // FAQ 데이터 조회 (프로젝트 기수 필터링 없음)
         $faqs = $this->getFaqs($request);
 
-        return view('faq.index', compact('gNum', 'gName', 'sName', 'faqs'));
+        return view('faq.index', compact('gNum', 'sNum', 'gName', 'sName', 'faqs'));
     }
 
     /**

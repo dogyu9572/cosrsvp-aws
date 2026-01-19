@@ -21,7 +21,7 @@ $memberAffiliation = $member['affiliation'] ?? 'Basic Medicine_Korea University'
 				<div class="name">{{ $memberName }}</div>
 				<div class="affiliation">{{ $memberAffiliation }}</div>
 			</div>
-			<a href="{{ route('home') }}" class="btn_mypage mo_vw">MY PAGE</a>
+			<a href="{{ route('mypage') }}" class="btn_mypage mo_vw">MY PAGE</a>
 		</div>
 		<div class="scroll">
 			<div class="gnb">
@@ -37,11 +37,11 @@ $memberAffiliation = $member['affiliation'] ?? 'Basic Medicine_Korea University'
 						<a href="{{ route('faq') }}" class="{{ (($gNum ?? '') == '07' && ($sNum ?? '') == '02') ? 'on' : '' }}">FAQ</a>
 					</div>
 				</div>
-				<div class="menu gnb8 {{ ($gNum ?? '') == '08' ? 'on' : '' }}"><a href="{{ route('home') }}">MY PAGE<i></i></a>
+				<div class="menu gnb8 {{ ($gNum ?? '') == '08' ? 'on' : '' }}"><a href="{{ route('mypage') }}">MY PAGE<i></i></a>
 					<button type="button" class="alert"><span class="flex"><i></i><p>There is a notification that requires your confirmation.<br/>Please confirm.</p></span></button>
 					<div class="snb">
-						<a href="{{ route('home') }}" class="{{ (($gNum ?? '') == '08' && ($sNum ?? '') == '01') ? 'on' : '' }}">MY PAGE</a>
-						<a href="{{ route('home') }}" class="{{ (($gNum ?? '') == '08' && ($sNum ?? '') == '02') ? 'on' : '' }}">Alarm</a>
+						<a href="{{ route('mypage') }}" class="{{ (($gNum ?? '') == '08' && ($sNum ?? '') == '01') ? 'on' : '' }}">MY PAGE</a>
+						<a href="{{ route('alarms') }}" class="{{ (($gNum ?? '') == '08' && ($sNum ?? '') == '02') ? 'on' : '' }}">Alarm</a>
 					</div>
 				</div>
 			</div>

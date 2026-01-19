@@ -25,8 +25,8 @@
 		</form>
 		
 		<div class="btns flex_center">
-			<a href="{{ route('auth.password.request') }}">Find ID</a>
-			<a href="{{ route('auth.password.request') }}">find password</a>
+			<a href="{{ route('find-id') }}">Find ID</a>
+			<a href="{{ route('find-pw') }}">find password</a>
 		</div>
 		<div class="btm"><span class="c_red">※</span> This system is available only to users who have been approved as participants in the Cosmojin training program after logging in.</div>
 		<div class="gbox">
