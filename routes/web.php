@@ -132,6 +132,12 @@ Route::prefix('kofih')->middleware(['kofih'])->group(function () {
     Route::get('/mypage', [App\Http\Controllers\KofihMypageController::class, 'index'])->name('kofih.mypage.index');
     
     Route::get('/schedule', [App\Http\Controllers\KofihScheduleController::class, 'index'])->name('kofih.schedule.index');
+    
+    Route::get('/notices', [App\Http\Controllers\KofihNoticeController::class, 'index'])->name('kofih.notices.index');
+    Route::get('/notices/{id}', [App\Http\Controllers\KofihNoticeController::class, 'show'])->name('kofih.notices.show');
+    
+    Route::get('/gallery', [App\Http\Controllers\KofihGalleryController::class, 'index'])->name('kofih.gallery.index');
+    Route::get('/gallery/{id}', [App\Http\Controllers\KofihGalleryController::class, 'show'])->name('kofih.gallery.show');
 });
 
 // 인증 관련 라우트
