@@ -6,6 +6,7 @@ use App\Models\AdminMenu;
 use App\Models\Setting;
 use App\Models\Course;
 use App\Models\OperatingInstitution;
+use App\Models\Alert;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Request;
@@ -155,6 +156,15 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
             
+            // 새로운 알림 확인 (최근 7일 이내 생성된 알림)
+            $hasNewAlert = false;
+            $memberId = $member['id'] ?? null;
+            if ($memberId) {
+                $hasNewAlert = Alert::where('member_id', $memberId)
+                    ->where('created_at', '>=', now()->subDays(7))
+                    ->exists();
+            }
+            
             $view->with([
                 'memberName' => $memberName,
                 'memberAffiliation' => $memberAffiliation,
@@ -164,6 +174,7 @@ class AppServiceProvider extends ServiceProvider
                 'cosmojinManagerName' => $cosmojinManagerName,
                 'cosmojinManagerPhone' => $cosmojinManagerPhone,
                 'cosmojinManagerEmail' => $cosmojinManagerEmail,
+                'hasNewAlert' => $hasNewAlert,
             ]);
         });
 

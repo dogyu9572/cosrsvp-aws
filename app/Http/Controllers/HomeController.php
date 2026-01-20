@@ -9,6 +9,8 @@ use App\Models\Banner;
 use App\Models\Member;
 use App\Models\MemberDocument;
 use App\Models\Country;
+use App\Models\Schedule;
+use App\Models\Alert;
 use App\Services\ExchangeRateService;
 use App\Services\WeatherService;
 use Illuminate\Support\Facades\DB;
@@ -28,12 +30,17 @@ class HomeController extends Controller
 
     public function index()
     {
+        // 로그인 체크
+        $member = session('member');
+        if (!$member || !isset($member['id'])) {
+            return redirect()->route('login')->with('error', '로그인이 필요합니다.');
+        }
+        
         $gNum = "main";
         $gName = "";
         $sName = "";
         
         // 로그인한 회원의 프로젝트 관련 정보
-        $member = session('member');
         $memberProjectInfo = [
             'project_term_id' => $member['project_term_id'] ?? null,
             'course_id' => $member['course_id'] ?? null,
@@ -59,6 +66,10 @@ class HomeController extends Controller
         $memberModel = null;
         $memberDocuments = collect();
         $countryDocument = null;
+        $memberDocument = null;
+        $documentName = null;
+        $submissionDeadline = null;
+        
         if ($memberId) {
             $memberModel = Member::find($memberId);
             $memberDocuments = MemberDocument::where('member_id', $memberId)
@@ -75,6 +86,36 @@ class HomeController extends Controller
                     ];
                 }
             }
+            
+            // MemberDocument가 있으면 MemberDocument 사용, 없으면 Country 정보 사용
+            $memberDocument = $memberDocuments && $memberDocuments->count() > 0 ? $memberDocuments->first() : null;
+            $documentName = $memberDocument ? $memberDocument->document_name : ($countryDocument ? $countryDocument->document_name : null);
+            $submissionDeadline = $memberDocument ? $memberDocument->submission_deadline : ($countryDocument ? $countryDocument->submission_deadline : null);
+        }
+        
+        // 회원의 국가에 해당하는 일정 조회
+        $stepSchedules = collect();
+        if ($memberModel && $memberModel->country_id) {
+            $stepSchedules = Schedule::where('country_id', $memberModel->country_id)
+                ->where('is_active', true)
+                ->orderBy('display_order')
+                ->get()
+                ->map(function($schedule) {
+                    $today = now();
+                    $isCurrent = $schedule->start_date && $schedule->end_date 
+                        && $today >= $schedule->start_date 
+                        && $today <= $schedule->end_date;
+                    
+                    return (object) [
+                        'id' => $schedule->id,
+                        'step_number' => $schedule->display_order,
+                        'name_en' => $schedule->name_en,
+                        'start_date' => $schedule->start_date,
+                        'end_date' => $schedule->end_date,
+                        'is_current' => $isCurrent,
+                        'is_completed' => $schedule->end_date && $today > $schedule->end_date,
+                    ];
+                });
         }
         
         // 활성화된 팝업 조회 (쿠키 확인하여 숨겨진 팝업 제외)
@@ -95,7 +136,7 @@ class HomeController extends Controller
             ->ordered()
             ->get();
         
-        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners', 'schedules', 'memberDocuments', 'memberId', 'memberModel', 'countryDocument'));
+        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners', 'schedules', 'memberDocuments', 'memberId', 'memberModel', 'countryDocument', 'memberDocument', 'documentName', 'submissionDeadline', 'stepSchedules'));
     }
     
     /**

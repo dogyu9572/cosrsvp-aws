@@ -59,12 +59,13 @@ class MemberNoteController extends Controller
     /**
      * 회원비고 수정 폼 표시
      */
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
         $memberNote = MemberNote::with(['member', 'files'])->findOrFail($id);
         $members = Member::active()->orderBy('name')->get(['id', 'name']);
+        $memberId = $request->get('member_id');
         
-        return view('backoffice.member-notes.edit', compact('memberNote', 'members'));
+        return view('backoffice.member-notes.edit', compact('memberNote', 'members', 'memberId'));
     }
 
     /**
@@ -79,7 +80,8 @@ class MemberNoteController extends Controller
 
         $this->memberNoteService->updateMemberNote($memberNote, $data, $files, $deletedFileIds);
 
-        return redirect()->route('backoffice.member-notes.index')
+        $memberId = $request->input('member_id');
+        return redirect()->route('backoffice.member-notes.index', $memberId ? ['member_id' => $memberId] : [])
             ->with('success', '회원비고가 수정되었습니다.');
     }
 

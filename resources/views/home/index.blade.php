@@ -17,11 +17,18 @@
 		<div class="wbox">
 			<div class="itit ico_sch">Schedule</div>
 			<ol class="step_area">
-				<li class="on chk"><i>1</i><span></span>STEP 1<strong>Preparing for Entry</strong></li>
-				<li class="on"><i>2</i><span>STEP 2</span><strong>Document Verification after Entry</strong></li>
-				<li><i>3</i><span>STEP 3</span><strong>Health Checkup</strong></li>
-				<li><i>4</i><span>STEP 4</span><strong>Opening an Account</strong></li>
-				<li><i>5</i><span>STEP 5</span><strong>Cultural Experience</strong></li>
+				@forelse($stepSchedules ?? [] as $schedule)
+					<li class="{{ $schedule->is_current ? 'on' : '' }} {{ $schedule->is_completed ? 'chk' : '' }}">
+						<i>{{ $schedule->step_number }}</i>
+						@if($schedule->step_number == 1)
+							<span></span>STEP {{ $schedule->step_number }}
+						@else
+							<span>STEP {{ $schedule->step_number }}</span>
+						@endif
+						<strong>{{ $schedule->name_en }}</strong>
+					</li>
+				@empty
+				@endforelse
 			</ol>
 		</div>
 		
@@ -71,13 +78,6 @@
 							</tr>
 						</thead>
 						<tbody>
-							@php
-								// MemberDocument가 있으면 MemberDocument 사용, 없으면 Country 정보 사용
-								$memberDocument = $memberDocuments && $memberDocuments->count() > 0 ? $memberDocuments->first() : null;
-								$displayDocument = $memberDocument ?: $countryDocument;
-								$documentName = $memberDocument ? $memberDocument->document_name : ($countryDocument ? $countryDocument->document_name : null);
-								$submissionDeadline = $memberDocument ? $memberDocument->submission_deadline : ($countryDocument ? $countryDocument->submission_deadline : null);
-							@endphp
 							<tr>
 								<td>
 									@if($memberDocument)

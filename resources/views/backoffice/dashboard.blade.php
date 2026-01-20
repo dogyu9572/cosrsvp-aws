@@ -69,48 +69,47 @@
 
     <!-- 데이터 그리드 -->
     <div class="dashboard-grid">
-        <!-- 게시판 현황 -->
+        <!-- 코드 번호 관리 -->
         <div class="grid-item grid-col-12">
             <div class="grid-item-header">
-                <h3>게시판 현황</h3>
-                <a href="{{ route('backoffice.boards.index') }}" class="more-btn">
-                    <i class="fas fa-arrow-right"></i> 더보기
-                </a>
+                <h3>코드 번호 관리</h3>
             </div>
             <div class="grid-item-body">
-                <table class="dashboard-table">
-                    <thead>
-                        <tr>
-                            <th>게시판명</th>
-                            <th>게시글</th>
-                            <th>최근활동</th>
-                            <th>상태</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($boards as $board)
-                            <tr>
-                                <td>
-                                    <a href="{{ route('backoffice.board-posts.index', ['slug' => $board->slug]) }}" 
-                                       class="text-decoration-none text-dark fw-medium">
-                                        {{ $board->name }}
-                                    </a>
-                                </td>
-                                <td>{{ $board->getPostsCount() }}</td>
-                                <td>{{ $board->updated_at ? $board->updated_at->diffForHumans() : '-' }}</td>
-                                <td>
-                                    <span class="table-badge badge-{{ $board->is_active ? 'success' : 'secondary' }}">
-                                        {{ $board->is_active ? '활성' : '비활성' }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="text-center">등록된 게시판이 없습니다.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                <div style="padding: 20px;">
+                    @if(($accessCodes ?? collect())->isEmpty())
+                        <!-- 코드가 없을 때: 등록 폼 -->
+                        <div style="max-width: 500px; margin: 0 auto;">
+                            <form id="codeAddForm" style="display: flex; gap: 10px; align-items: flex-end;">
+                                <div style="flex: 1;">
+                                    <label for="newCode" style="display: block; margin-bottom: 5px; font-weight: 600;">코드</label>
+                                    <input type="text" id="newCode" name="code" class="form-control" placeholder="코드를 입력하세요" required style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="padding: 8px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    코드 등록
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        <!-- 코드가 있을 때: 코드 목록 -->
+                        @foreach($accessCodes as $code)
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div>
+                                        <strong style="font-size: 18px;">{{ $code->code }}</strong>
+                                    </div>
+                                    <div>
+                                        <span class="table-badge badge-{{ $code->is_active ? 'success' : 'secondary' }}">
+                                            {{ $code->is_active ? '활성' : '비활성' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-edit-code" data-code-id="{{ $code->id }}">
+                                    <i class="fas fa-edit"></i> 수정
+                                </button>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -144,9 +143,253 @@
         </div>
     </div>
 </div>
+
+<!-- 코드 추가/수정 모달 -->
+<div id="codeModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 id="modalTitle">코드 수정</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="codeForm">
+                <input type="hidden" id="codeId" name="id">
+                <div class="form-group">
+                    <label for="code">코드 <span class="required">*</span></label>
+                    <input type="text" id="code" name="code" class="form-control" required>
+                    <small class="form-text text-muted">대소문자 구분 없이 입력 가능합니다.</small>
+                </div>
+                <div class="form-group">
+                    <label for="is_active">활성화 여부</label>
+                    <select id="is_active" name="is_active" class="form-control">
+                        <option value="1">활성</option>
+                        <option value="0">비활성</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">저장</button>
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.form-group .required {
+    color: red;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.btn-edit-code {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-edit-code:hover {
+    background-color: #0056b3;
+}
+</style>
 @endsection
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ asset('js/backoffice/dashboard.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('codeModal');
+    const codeForm = document.getElementById('codeForm');
+    const codeAddForm = document.getElementById('codeAddForm');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const closeBtn = document.querySelector('.close');
+    const modalTitle = document.getElementById('modalTitle');
+
+    // 코드 등록 폼 제출
+    if (codeAddForm) {
+        codeAddForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(codeAddForm);
+            const data = Object.fromEntries(formData);
+            data.is_active = '1';
+
+            fetch('/backoffice/access-codes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    const errorMsg = result.errors ? Object.values(result.errors).flat().join('\n') : result.message;
+                    alert(errorMsg || '코드 등록에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('코드 등록 중 오류가 발생했습니다.');
+            });
+        });
+    }
+
+    // 모달 열기 (수정)
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-edit-code')) {
+            const codeId = e.target.closest('.btn-edit-code').dataset.codeId;
+            fetch(`/backoffice/access-codes`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const code = data.data.find(c => c.id == codeId);
+                        if (code) {
+                            modalTitle.textContent = '코드 수정';
+                            document.getElementById('codeId').value = code.id;
+                            document.getElementById('code').value = code.code;
+                            document.getElementById('is_active').value = code.is_active ? '1' : '0';
+                            modal.style.display = 'block';
+                        }
+                    }
+                });
+        }
+    });
+
+    // 모달 닫기
+    function closeModal() {
+        modal.style.display = 'none';
+        codeForm.reset();
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', function(e) {
+        if (e.target == modal) {
+            closeModal();
+        }
+    });
+
+    // 폼 제출
+    codeForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const codeId = document.getElementById('codeId').value;
+        const formData = new FormData(codeForm);
+        const data = Object.fromEntries(formData);
+        
+        const url = `/backoffice/access-codes/${codeId}`;
+        const method = 'PUT';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert(result.message);
+                location.reload();
+            } else {
+                alert(result.message || '처리 중 오류가 발생했습니다.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('처리 중 오류가 발생했습니다.');
+        });
+    });
+});
+</script>
 @endsection

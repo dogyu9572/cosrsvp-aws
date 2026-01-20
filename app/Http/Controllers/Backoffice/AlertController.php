@@ -44,6 +44,8 @@ class AlertController extends Controller
     public function store(StoreAlertRequest $request)
     {
         $data = $request->validated();
+        // 체크박스가 체크되지 않으면 값이 전송되지 않으므로 기본값 설정
+        $data['is_notice'] = $request->has('is_notice') ? (bool)$request->input('is_notice') : false;
         $files = $request->hasFile('files') ? $request->file('files') : [];
         
         $this->alertService->createAlert($data, $files);
@@ -56,10 +58,12 @@ class AlertController extends Controller
     /**
      * 알림 수정 폼 표시
      */
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
         $alert = Alert::with('files')->findOrFail($id);
-        return view('backoffice.alerts.edit', compact('alert'));
+        // 쿼리 파라미터에서 member_id 가져오기
+        $memberId = $request->query('member_id');
+        return view('backoffice.alerts.edit', compact('alert', 'memberId'));
     }
 
     /**
@@ -69,6 +73,8 @@ class AlertController extends Controller
     {
         $alert = Alert::findOrFail($id);
         $data = $request->validated();
+        // 체크박스가 체크되지 않으면 값이 전송되지 않으므로 기본값 설정
+        $data['is_notice'] = $request->has('is_notice') ? (bool)$request->input('is_notice') : false;
         $files = $request->hasFile('files') ? $request->file('files') : [];
         $deletedFileIds = $request->input('deleted_file_ids', []);
 

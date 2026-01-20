@@ -65,7 +65,18 @@ class AlertService
         $perPage = $request->get('per_page', 10);
         $perPage = in_array($perPage, [10, 20, 50, 100]) ? $perPage : 10;
 
-        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+        // 전체 일반 게시물 개수 계산 (공지사항 제외)
+        $totalNormal = (clone $query)->where('is_notice', false)->count();
+
+        // 공지사항이 먼저, 그 다음 일반 게시물을 등록일 내림차순으로 정렬
+        $paginator = $query->orderBy('is_notice', 'desc')
+                          ->orderBy('created_at', 'desc')
+                          ->paginate($perPage);
+        
+        // 페이지네이터에 일반 게시물 개수 추가
+        $paginator->totalNormal = $totalNormal;
+        
+        return $paginator;
     }
 
     /**

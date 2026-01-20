@@ -11,7 +11,7 @@
 @section('content')
 <div class="board-container">
     <div class="board-header">
-        <a href="{{ route('backoffice.member-notes.index') }}" class="btn btn-secondary btn-sm">
+        <a href="{{ route('backoffice.member-notes.index', isset($memberId) && $memberId ? ['member_id' => $memberId] : []) }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-arrow-left"></i> 목록으로
         </a>
     </div>
@@ -31,6 +31,10 @@
             <form action="{{ route('backoffice.member-notes.update', $memberNote) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
+
+                @if(isset($memberId) && $memberId)
+                    <input type="hidden" name="member_id" value="{{ $memberId }}">
+                @endif
 
                 <div class="board-form-group">
                     <label for="member_id" class="board-form-label">
@@ -147,7 +151,7 @@
 
                 <div class="board-form-actions">
                     <button type="submit" class="btn btn-primary">저장</button>
-                    <a href="{{ route('backoffice.member-notes.index') }}" class="btn btn-secondary">목록</a>
+                    <a href="{{ route('backoffice.member-notes.index', isset($memberId) && $memberId ? ['member_id' => $memberId] : []) }}" class="btn btn-secondary">목록</a>
                 </div>
             </form>
         </div>

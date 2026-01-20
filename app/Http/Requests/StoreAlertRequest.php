@@ -21,6 +21,7 @@ class StoreAlertRequest extends FormRequest
     {
         return [
             'member_id' => 'required|exists:members,id',
+            'is_notice' => 'boolean',
             'korean_title' => 'required|string|max:255',
             'english_title' => 'required|string|max:255',
             'korean_content' => 'required|string',

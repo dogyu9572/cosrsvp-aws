@@ -24,6 +24,7 @@ use App\Http\Controllers\Backoffice\ProjectPeriodController;
 use App\Http\Controllers\Backoffice\CountryController;
 use App\Http\Controllers\Backoffice\ScheduleController;
 use App\Http\Controllers\Backoffice\InquiryController;
+use App\Http\Controllers\Backoffice\AccessCodeController;
 
 // =============================================================================
 // 백오피스 인증 라우트
@@ -123,6 +124,14 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
         ->name('backoffice.access-statistics');
     Route::get('access-statistics/get-statistics', [AccessStatisticsController::class, 'getStatistics'])
         ->name('backoffice.access-statistics.get-statistics');
+
+    // Kofih 코드 관리
+    Route::get('access-codes', [AccessCodeController::class, 'index'])
+        ->name('backoffice.access-codes.index');
+    Route::post('access-codes', [AccessCodeController::class, 'store'])
+        ->name('backoffice.access-codes.store');
+    Route::put('access-codes/{accessCode}', [AccessCodeController::class, 'update'])
+        ->name('backoffice.access-codes.update');
 
     // 관리자 계정 관리
     Route::post('admins/bulk-destroy', [AdminController::class, 'bulkDestroy'])

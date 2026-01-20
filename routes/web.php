@@ -20,6 +20,12 @@ use App\Http\Controllers\TermsController;
 use App\Http\Controllers\Backoffice\PopupController;
 use App\Http\Controllers\MemberDocumentController;
 use App\Http\Controllers\NoteController;
+use App\Http\Controllers\KofihAuthController;
+use App\Http\Controllers\KofihMemberController;
+use App\Http\Controllers\KofihMemberNoteController;
+use App\Http\Controllers\KofihAlertController;
+use App\Http\Controllers\KofihMypageController;
+use App\Http\Controllers\KofihScheduleController;
 
 // =============================================================================
 // 기본 라우트 파일
@@ -97,6 +103,36 @@ Route::get('/ticket-file', [HomeController::class, 'downloadTicketFile'])->name(
 // 개인정보처리방침 및 이용약관
 Route::get('/privacy-policy', [PrivacyPolicyController::class, 'index'])->name('privacy-policy');
 Route::get('/terms', [TermsController::class, 'index'])->name('terms');
+
+// Kofih 코드 인증
+Route::get('/kofih/login', [KofihAuthController::class, 'showLoginForm'])->name('kofih.login');
+Route::post('/kofih/login', [KofihAuthController::class, 'login']);
+Route::post('/kofih/logout', [KofihAuthController::class, 'logout'])->name('kofih.logout');
+
+// Kofih 인증이 필요한 라우트 (미들웨어 적용)
+Route::prefix('kofih')->middleware(['kofih'])->group(function () {
+    // 일정 필터링 API
+    Route::get('schedule/get-courses-by-project-term', [KofihScheduleController::class, 'getCoursesByProjectTerm'])->name('kofih.schedule.get-courses-by-project-term');
+    Route::get('schedule/get-institutions-by-course', [KofihScheduleController::class, 'getInstitutionsByCourse'])->name('kofih.schedule.get-institutions-by-course');
+    Route::get('schedule/get-project-periods-by-institution', [KofihScheduleController::class, 'getProjectPeriodsByInstitution'])->name('kofih.schedule.get-project-periods-by-institution');
+    Route::get('schedule/get-countries-by-project-period', [KofihScheduleController::class, 'getCountriesByProjectPeriod'])->name('kofih.schedule.get-countries-by-project-period');
+    
+    Route::get('/', function () {
+        return view('kofih.dashboard');
+    })->name('kofih.dashboard');
+    
+    Route::get('/member', [App\Http\Controllers\KofihMemberController::class, 'index'])->name('kofih.member.index');
+    
+    Route::get('/member-notes', [App\Http\Controllers\KofihMemberNoteController::class, 'index'])->name('kofih.member-notes.index');
+    Route::get('/member-notes/{id}', [App\Http\Controllers\KofihMemberNoteController::class, 'show'])->name('kofih.member-notes.show');
+    
+    Route::get('/member-notifications', [App\Http\Controllers\KofihAlertController::class, 'index'])->name('kofih.alerts.index');
+    Route::get('/member-notifications/{id}', [App\Http\Controllers\KofihAlertController::class, 'show'])->name('kofih.alerts.show');
+    
+    Route::get('/mypage', [App\Http\Controllers\KofihMypageController::class, 'index'])->name('kofih.mypage.index');
+    
+    Route::get('/schedule', [App\Http\Controllers\KofihScheduleController::class, 'index'])->name('kofih.schedule.index');
+});
 
 // 인증 관련 라우트
 Route::prefix('auth')->name('auth.')->group(function () {

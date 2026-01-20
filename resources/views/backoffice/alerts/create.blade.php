@@ -61,6 +61,16 @@
                 @endif
 
                 <div class="board-form-group">
+                    <div class="board-options-list board-options-horizontal">
+                        <div class="board-option-item">
+                            <input type="checkbox" id="is_notice" name="is_notice" value="1" @checked(old('is_notice'))>
+                            <label for="is_notice">공지사항</label>
+                        </div>
+                    </div>
+                    <small class="board-form-text">*체크하면 목록 최상단에 표시됩니다.</small>
+                </div>
+
+                <div class="board-form-group">
                     <label for="korean_title" class="board-form-label">
                         국문 제목 <span class="required">*</span>
                     </label>

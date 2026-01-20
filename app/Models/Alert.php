@@ -16,11 +16,16 @@ class Alert extends Model
 
     protected $fillable = [
         'member_id',
+        'is_notice',
         'korean_title',
         'english_title',
         'korean_content',
         'english_content',
         'created_by',
+    ];
+
+    protected $casts = [
+        'is_notice' => 'boolean',
     ];
 
     /**

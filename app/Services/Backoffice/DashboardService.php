@@ -4,6 +4,7 @@ namespace App\Services\Backoffice;
 
 use App\Models\Board;
 use App\Models\DailyVisitorStat;
+use App\Models\AccessCode;
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
@@ -14,7 +15,7 @@ class DashboardService
     public function getDashboardData(): array
     {
         return [
-            'boards' => $this->getBoardsOrderedByMenu(),
+            'accessCodes' => $this->getAccessCodes(),
             'totalBoards' => Board::where('is_single_page', false)->count(),
             'totalPosts' => $this->getTotalPostsCount(),
             'activeBanners' => $this->getActiveBannersCount(),
@@ -198,28 +199,12 @@ class DashboardService
     }
 
     /**
-     * admin_menus의 1차 메뉴 순서대로 게시판 정렬
+     * 코드 목록 가져오기
      */
-    public function getBoardsOrderedByMenu()
+    public function getAccessCodes()
     {
         try {
-            $boards = Board::where('is_single_page', false)->get();
-            
-            $boardsWithMenu = $boards->map(function($board) {
-                $adminMenu = $board->getAdminMenu();
-                $board->adminMenu = $adminMenu;
-                return $board;
-            });
-            
-            $filteredBoards = $boardsWithMenu->filter(function($board) {
-                return $board->adminMenu !== null;
-            });
-            
-            $sortedBoards = $filteredBoards->sortBy(function($board) {
-                return $board->adminMenu->parent->order;
-            });
-            
-            return $sortedBoards->take(10)->values();
+            return AccessCode::orderBy('created_at', 'desc')->get();
         } catch (\Exception $e) {
             return collect();
         }

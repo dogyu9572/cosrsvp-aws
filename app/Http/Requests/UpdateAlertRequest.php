@@ -20,6 +20,8 @@ class UpdateAlertRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'member_id' => 'nullable|exists:members,id',
+            'is_notice' => 'boolean',
             'korean_title' => 'required|string|max:255',
             'english_title' => 'required|string|max:255',
             'korean_content' => 'required|string',

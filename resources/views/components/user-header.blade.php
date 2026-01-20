@@ -1,7 +1,3 @@
-@php
-$member = session('member', null);
-@endphp
-
 <div class="header">
 	<a href="{{ route('home') }}" class="logo">
 		<img src="/pub/images/logo.png" alt="logo"><h1>COSMOJIN</h1>
@@ -36,7 +32,9 @@ $member = session('member', null);
 					</div>
 				</div>
 				<div class="menu gnb8 {{ ($gNum ?? '') == '08' ? 'on' : '' }}"><a href="{{ route('mypage') }}">MY PAGE<i></i></a>
-					<button type="button" class="alert"><span class="flex"><i></i><p>There is a notification that requires your confirmation.<br/>Please confirm.</p></span></button>
+					@if($hasNewAlert)
+						<button type="button" class="alert"><span class="flex"><i></i><p>There is a notification that requires your confirmation.<br/>Please confirm.</p></span></button>
+					@endif
 					<div class="snb">
 						<a href="{{ route('mypage') }}" class="{{ (($gNum ?? '') == '08' && ($sNum ?? '') == '01') ? 'on' : '' }}">MY PAGE</a>
 						<a href="{{ route('alarms') }}" class="{{ (($gNum ?? '') == '08' && ($sNum ?? '') == '02') ? 'on' : '' }}">Alarm</a>

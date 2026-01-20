@@ -11,11 +11,11 @@
 @section('content')
 <div class="board-container">
     @php
-        $memberId = request('member_id');
+        // 디버깅용: memberId 확인
+        // dd(['memberId' => $memberId, 'query' => request()->query('member_id')]);
     @endphp
-
     <div class="board-header">
-        <a href="{{ route('backoffice.alerts.index', $memberId ? ['member_id' => $memberId] : []) }}" class="btn btn-secondary btn-sm">
+        <a href="{{ route('backoffice.alerts.index', !empty($memberId) ? ['member_id' => $memberId] : []) }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-arrow-left"></i> 목록으로
         </a>
     </div>
@@ -36,9 +36,19 @@
                 @csrf
                 @method('PUT')
 
-                @if($memberId)
+                @if(isset($memberId) && $memberId)
                     <input type="hidden" name="member_id" value="{{ $memberId }}">
                 @endif
+
+                <div class="board-form-group">
+                    <div class="board-options-list board-options-horizontal">
+                        <div class="board-option-item">
+                            <input type="checkbox" id="is_notice" name="is_notice" value="1" @checked(old('is_notice', $alert->is_notice))>
+                            <label for="is_notice">공지사항</label>
+                        </div>
+                    </div>
+                    <small class="board-form-text">*체크하면 목록 최상단에 표시됩니다.</small>
+                </div>
 
                 <div class="board-form-group">
                     <label for="korean_title" class="board-form-label">
@@ -100,7 +110,7 @@
 
                 <div class="board-form-actions">
                     <button type="submit" class="btn btn-primary">저장</button>
-                    <a href="{{ route('backoffice.alerts.index', $memberId ? ['member_id' => $memberId] : []) }}" class="btn btn-secondary">목록</a>
+                    <a href="{{ route('backoffice.alerts.index', isset($memberId) && $memberId ? ['member_id' => $memberId] : []) }}" class="btn btn-secondary">목록</a>
                 </div>
             </form>
         </div>

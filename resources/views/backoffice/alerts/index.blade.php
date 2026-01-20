@@ -100,14 +100,35 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                @php
+                                    $totalNormal = $alerts->totalNormal ?? ($alerts->total() - $alerts->where('is_notice', true)->count());
+                                    $normalIndex = 0;
+                                @endphp
                                 @foreach($alerts as $index => $alert)
-                                    <tr>
-                                        <td>{{ $alerts->total() - ($alerts->currentPage() - 1) * $alerts->perPage() - $loop->index }}</td>
+                                    @if($alert->is_notice)
+                                        @php
+                                            $displayNumber = '공지';
+                                        @endphp
+                                    @else
+                                        @php
+                                            $normalIndex++;
+                                            // 현재 페이지 이전 페이지들의 일반 게시물 개수
+                                            $previousPageNormal = 0;
+                                            if ($alerts->currentPage() > 1) {
+                                                for ($i = 1; $i < $alerts->currentPage(); $i++) {
+                                                    $previousPageNormal += $alerts->getCollection()->slice(($i - 1) * $alerts->perPage(), $alerts->perPage())->where('is_notice', false)->count();
+                                                }
+                                            }
+                                            $displayNumber = $totalNormal - $previousPageNormal - $normalIndex + 1;
+                                        @endphp
+                                    @endif
+                                    <tr @if($alert->is_notice) class="notice" @endif>
+                                        <td>{{ $displayNumber }}</td>
                                         <td>{{ $alert->korean_title }}</td>
                                         <td>{{ $alert->created_at->format('Y.m.d') }}</td>
                                         <td>
                                             <div class="board-btn-group">
-                                                <a href="{{ route('backoffice.alerts.edit', $alert) }}" class="btn btn-primary btn-sm">
+                                                <a href="{{ route('backoffice.alerts.edit', array_merge([$alert], request('member_id') ? ['member_id' => request('member_id')] : [])) }}" class="btn btn-primary btn-sm">
                                                     상세
                                                 </a>
                                                 <form action="{{ route('backoffice.alerts.destroy', $alert) }}" method="POST" class="d-inline" onsubmit="return confirm('해당 게시물이 삭제됩니다. 정말 삭제하시겠습니까?');">
