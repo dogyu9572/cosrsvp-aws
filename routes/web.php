@@ -117,9 +117,7 @@ Route::prefix('kofih')->middleware(['kofih'])->group(function () {
     Route::get('schedule/get-project-periods-by-institution', [KofihScheduleController::class, 'getProjectPeriodsByInstitution'])->name('kofih.schedule.get-project-periods-by-institution');
     Route::get('schedule/get-countries-by-project-period', [KofihScheduleController::class, 'getCountriesByProjectPeriod'])->name('kofih.schedule.get-countries-by-project-period');
     
-    Route::get('/', function () {
-        return view('kofih.dashboard');
-    })->name('kofih.dashboard');
+    Route::get('/', [App\Http\Controllers\KofihDashboardController::class, 'index'])->name('kofih.dashboard');
     
     Route::get('/member', [App\Http\Controllers\KofihMemberController::class, 'index'])->name('kofih.member.index');
     

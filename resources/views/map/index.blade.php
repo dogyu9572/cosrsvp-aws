@@ -13,9 +13,15 @@ $gName = $gName ?? "Accommodation and surrounding areas";
         <div class="stitle">{{ $gName }}<div class="location"><a href="{{ route('home') }}" class="home">Home</a><span><strong>{{ $gName }}</strong></span></div></div>
         
         <div class="google_map map-wrap">
-            <div id="map">
-                <iframe id="mapFrame" src="https://www.google.com/maps?q=37.5665,126.9780&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div>
+                <input id="pac-input" type="text" placeholder="장소 검색">
+                <div class="place-info" id="place-info" style="display:none;">
+                    <div class="thumb" id="place-thumb"></div>
+                    <div class="name" id="place-name"></div>
+                    <div class="addr" id="place-addr"></div>
+                </div>
             </div>
+            <div id="map"></div>
         </div>
         
     </div>
@@ -24,30 +30,11 @@ $gName = $gName ?? "Accommodation and surrounding areas";
 @include('components.user-footer')
 
 @push('scripts')
-<script>
-$(document).ready(function() {
-    // 기본 위치 (서울 시청)
-    const defaultPos = { lat: 37.5665, lng: 126.9780 };
-    
-    // 현위치 가져오기
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                // 구글맵 Embed URL 업데이트 (좌표로 마커 표시)
-                // 구글맵 Embed는 자체 검색창을 포함하고 있음
-                const mapUrl = `https://www.google.com/maps?q=${lat},${lng}&output=embed`;
-                document.getElementById("mapFrame").src = mapUrl;
-            },
-            function(error) {
-                console.error("위치 정보를 가져올 수 없습니다:", error);
-            }
-        );
-    }
-});
-</script>
+@php
+$apiKey = config('services.google.maps_api_key');
+@endphp
+<script src="https://maps.googleapis.com/maps/api/js?key={{ $apiKey }}&libraries=places&language=ko"></script>
+<script src="/js/common/google-maps.js"></script>
 @endpush
 
 @endsection
