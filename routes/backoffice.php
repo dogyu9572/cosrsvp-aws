@@ -178,6 +178,10 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
     // 정렬 순서 업데이트
     Route::post('board-posts/update-sort-order', [BoardPostController::class, 'updateSortOrder'])->name('backoffice.board-posts.update-sort-order');
 
+    // 게시글 관리 - 프로젝트 기수별 회원 조회 (AJAX) - board-posts/{slug} 보다 먼저 정의해야 함
+    Route::get('board-posts/get-members-by-project-term', [BoardPostController::class, 'getMembersByProjectTerm'])
+        ->name('backoffice.board-posts.get-members-by-project-term');
+
     // 게시글 관리 (특정 게시판)
     Route::prefix('board-posts/{slug}')->name('backoffice.board-posts.')->group(function () {
         Route::get('/', [BoardPostController::class, 'index'])->name('index');
@@ -314,10 +318,6 @@ Route::prefix('backoffice')->middleware(['backoffice'])->group(function () {
     Route::resource('schedules', ScheduleController::class, [
         'names' => 'backoffice.schedules'
     ])->except(['index', 'show', 'create', 'edit']);
-    
-    // 게시글 관리 - 프로젝트 기수별 회원 조회 (AJAX)
-    Route::get('board-posts/get-members-by-project-term', [BoardPostController::class, 'getMembersByProjectTerm'])
-        ->name('backoffice.board-posts.get-members-by-project-term');
 
     // 문의 관리
     Route::get('inquiries', [InquiryController::class, 'index'])

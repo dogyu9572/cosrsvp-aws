@@ -291,4 +291,22 @@ class BoardPostController extends Controller
         
         return null;
     }
+
+    /**
+     * 프로젝트 기수 조건으로 회원 목록 조회
+     */
+    public function getMembersByProjectTerm(Request $request)
+    {
+        $filters = $request->only([
+            'project_term_id',
+            'course_id',
+            'operating_institution_id',
+            'project_period_id',
+            'country_id'
+        ]);
+
+        $members = $this->memberService->getMembersByProjectTerm($filters);
+
+        return response()->json($members);
+    }
 }

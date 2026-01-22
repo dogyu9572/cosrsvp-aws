@@ -723,6 +723,8 @@ class ProjectTermSelector {
             }
         }
         this.updateHiddenInput();
+        // 초기 데이터 로드 완료 후 학생 목록 업데이트 이벤트 발생
+        this.triggerStudentUpdate();
     }
     
     async handleTermChange() {
