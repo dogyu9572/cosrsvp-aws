@@ -32,8 +32,11 @@ class NoticeController extends Controller
             'country_id' => $member['country_id'] ?? null,
         ];
 
+        // 로그인한 회원 ID
+        $memberId = $member['id'] ?? null;
+
         // 공지사항 데이터 조회
-        $notices = $this->getNoticesByProjectTerm($memberProjectInfo, $request);
+        $notices = $this->getNoticesByProjectTerm($memberProjectInfo, $request, $memberId);
 
         return view('notice.index', compact('gNum', 'gName', 'sName', 'notices', 'memberProjectInfo'));
     }
@@ -62,8 +65,11 @@ class NoticeController extends Controller
             'country_id' => $member['country_id'] ?? null,
         ];
 
+        // 로그인한 회원 ID
+        $memberId = $member['id'] ?? null;
+
         // 공지사항 상세 조회
-        $notice = $this->getNoticeById($id, $memberProjectInfo);
+        $notice = $this->getNoticeById($id, $memberProjectInfo, $memberId);
 
         if (!$notice) {
             abort(404, '공지사항을 찾을 수 없습니다.');
@@ -75,7 +81,7 @@ class NoticeController extends Controller
             ->increment('view_count');
 
         // 이전/다음 게시글 조회
-        $prevNext = $this->getPrevNextNotices($id, $memberProjectInfo);
+        $prevNext = $this->getPrevNextNotices($id, $memberProjectInfo, $memberId);
 
         return view('notice.show', compact('gNum', 'gName', 'sName', 'notice', 'memberProjectInfo', 'prevNext'));
     }
@@ -83,7 +89,7 @@ class NoticeController extends Controller
     /**
      * 프로젝트 기수에 해당하는 공지사항 조회
      */
-    private function getNoticesByProjectTerm($memberProjectInfo, Request $request)
+    private function getNoticesByProjectTerm($memberProjectInfo, Request $request, $memberId = null)
     {
         try {
             $tableName = 'board_notices';
@@ -98,23 +104,7 @@ class NoticeController extends Controller
                 ->select('id', 'title', 'content', 'author_name', 'attachments', 'view_count', 'is_notice', 'created_at', 'custom_fields')
                 ->whereNull('deleted_at');
 
-            // 프로젝트 관련 정보 필터링 (모든 필드 일치해야 함)
-            if ($memberProjectInfo['project_term_id']) {
-                $query->where(function($q) use ($memberProjectInfo) {
-                    $projectTermId = $memberProjectInfo['project_term_id'];
-                    $projectTermIdStr = (string)$projectTermId;
-                    
-                    // project_term_id 필터링
-                    $q->where(function($subQ) use ($projectTermId, $projectTermIdStr) {
-                        $subQ->whereRaw("JSON_EXTRACT(custom_fields, '$.project_term') LIKE ?", ['%"project_term_id":' . $projectTermId . '%'])
-                            ->orWhereRaw("JSON_EXTRACT(custom_fields, '$.project_term') LIKE ?", ['%"project_term_id":"' . $projectTermIdStr . '"%'])
-                            ->orWhereRaw("JSON_EXTRACT(JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.project_term')), '$.project_term_id') = ?", [$projectTermId])
-                            ->orWhereRaw("JSON_EXTRACT(JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.project_term')), '$.project_term_id') = ?", [$projectTermIdStr])
-                            ->orWhereRaw("custom_fields LIKE ?", ['%"project_term_id":' . $projectTermId . '%'])
-                            ->orWhereRaw("custom_fields LIKE ?", ['%"project_term_id":"' . $projectTermIdStr . '"%']);
-                    });
-                });
-            }
+            // 프로젝트 기수 필터링은 PHP 레벨에서 처리 (학생 체크가 있으면 프로젝트 기수 조건 무시)
 
             // 검색 필터 적용
             if ($request->filled('keyword')) {
@@ -130,13 +120,47 @@ class NoticeController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            // 필터링 후 추가 검증: PHP 레벨에서 모든 프로젝트 관련 필드가 일치하는 것만 필터링
-            $filteredNotices = $notices->filter(function ($notice) use ($memberProjectInfo) {
+            // 필터링 후 추가 검증: students 필드의 student_ids에 체크된 학생만 표시
+            $filteredNotices = $notices->filter(function ($notice) use ($memberProjectInfo, $memberId) {
                 $customFields = json_decode($notice->custom_fields ?? '{}', true);
                 
+                Log::info("공지사항 필터링 시작", [
+                    'notice_id' => $notice->id,
+                    'member_id' => $memberId,
+                    'custom_fields_raw' => $notice->custom_fields,
+                    'custom_fields_parsed' => $customFields
+                ]);
+                
                 if (!is_array($customFields)) {
+                    Log::warning("custom_fields 파싱 실패", ['notice_id' => $notice->id]);
                     return false;
                 }
+                
+                // students 필드 확인
+                if (isset($customFields['students'])) {
+                    $studentsData = is_string($customFields['students']) 
+                        ? json_decode($customFields['students'], true) 
+                        : $customFields['students'];
+                    
+                    if (is_array($studentsData) && isset($studentsData['student_ids'])) {
+                        $studentIds = is_array($studentsData['student_ids']) ? $studentsData['student_ids'] : [];
+                        
+                        // student_ids가 비어있으면 표시하지 않음
+                        if (empty($studentIds)) {
+                            return false;
+                        }
+                        
+                        // memberId가 student_ids에 포함되면 표시
+                        if ($memberId && in_array((int)$memberId, array_map('intval', $studentIds))) {
+                            return true;
+                        }
+                        
+                        // 포함되지 않으면 표시하지 않음
+                        return false;
+                    }
+                }
+                
+                // students 필드가 없으면 프로젝트 기수 조건 확인
                 
                 // project_term이 JSON 문자열로 저장된 경우 파싱
                 if (isset($customFields['project_term']) && is_string($customFields['project_term'])) {
@@ -164,6 +188,12 @@ class NoticeController extends Controller
                     }
                 }
                 
+                Log::info("프로젝트 기수 비교", [
+                    'notice_id' => $notice->id,
+                    'notice_project_info' => $noticeProjectInfo,
+                    'member_project_info' => $memberProjectInfo
+                ]);
+                
                 // 모든 필드가 일치하는지 확인
                 $matches = true;
                 foreach ($memberProjectInfo as $key => $memberValue) {
@@ -183,6 +213,11 @@ class NoticeController extends Controller
                         break;
                     }
                 }
+                
+                Log::info("프로젝트 기수 비교 결과", [
+                    'notice_id' => $notice->id,
+                    'matches' => $matches
+                ]);
                 
                 return $matches;
             });
@@ -239,14 +274,21 @@ class NoticeController extends Controller
 
         } catch (\Exception $e) {
             Log::error("공지사항 데이터 조회 오류: " . $e->getMessage());
-            return collect();
+            // 빈 페이지네이터 반환
+            return new \Illuminate\Pagination\LengthAwarePaginator(
+                collect(),
+                0,
+                10,
+                1,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
         }
     }
 
     /**
      * 공지사항 상세 조회
      */
-    private function getNoticeById($id, $memberProjectInfo)
+    private function getNoticeById($id, $memberProjectInfo, $memberId = null)
     {
         try {
             $tableName = 'board_notices';
@@ -298,20 +340,57 @@ class NoticeController extends Controller
                 }
             }
             
-            // 모든 필드가 일치하는지 확인
-            foreach ($memberProjectInfo as $key => $memberValue) {
-                if ($memberValue === null) {
-                    continue; // 회원 정보가 없으면 비교하지 않음
-                }
+            // students 필드 확인
+            if (isset($customFields['students'])) {
+                $studentsData = is_string($customFields['students']) 
+                    ? json_decode($customFields['students'], true) 
+                    : $customFields['students'];
                 
-                $noticeValue = $noticeProjectInfo[$key] ?? null;
-                if ($noticeValue === null) {
-                    return null; // 일치하지 않으면 null 반환
+                if (is_array($studentsData) && isset($studentsData['student_ids'])) {
+                    $studentIds = is_array($studentsData['student_ids']) ? $studentsData['student_ids'] : [];
+                    
+                    // student_ids가 비어있으면 null 반환
+                    if (empty($studentIds)) {
+                        return null;
+                    }
+                    
+                    // memberId가 student_ids에 포함되면 통과
+                    if ($memberId && in_array((int)$memberId, array_map('intval', $studentIds))) {
+                        return (object) [
+                            'id' => $notice->id,
+                            'title' => $customFields['title_en'] ?? $notice->title,
+                            'content' => $customFields['content_en'] ?? $notice->content,
+                            'author_name' => $notice->author_name,
+                            'attachments' => json_decode($notice->attachments ?? '[]', true) ?: [],
+                            'view_count' => $notice->view_count,
+                            'is_notice' => $notice->is_notice,
+                            'created_at' => $notice->created_at,
+                        ];
+                    }
+                    
+                    // 포함되지 않으면 null 반환
+                    return null;
                 }
-                
-                // 숫자/문자열 모두 비교
-                if (($noticeValue != $memberValue) && ((string)$noticeValue !== (string)$memberValue)) {
-                    return null; // 일치하지 않으면 null 반환
+            }
+            
+            // students 필드가 없으면 프로젝트 기수 조건 확인
+            {
+                // 학생 체크가 없으면 프로젝트 기수 조건 확인
+                // 모든 필드가 일치하는지 확인
+                foreach ($memberProjectInfo as $key => $memberValue) {
+                    if ($memberValue === null) {
+                        continue; // 회원 정보가 없으면 비교하지 않음
+                    }
+                    
+                    $noticeValue = $noticeProjectInfo[$key] ?? null;
+                    if ($noticeValue === null) {
+                        return null; // 일치하지 않으면 null 반환
+                    }
+                    
+                    // 숫자/문자열 모두 비교
+                    if (($noticeValue != $memberValue) && ((string)$noticeValue !== (string)$memberValue)) {
+                        return null; // 일치하지 않으면 null 반환
+                    }
                 }
             }
 
@@ -352,7 +431,7 @@ class NoticeController extends Controller
     /**
      * 이전/다음 공지사항 조회
      */
-    private function getPrevNextNotices($currentId, $memberProjectInfo)
+    private function getPrevNextNotices($currentId, $memberProjectInfo, $memberId = null)
     {
         try {
             $tableName = 'board_notices';
@@ -371,40 +450,48 @@ class NoticeController extends Controller
                 return ['prev' => null, 'next' => null];
             }
 
-            // 필터링된 공지사항 목록 조회 (프로젝트 기수 필터링 적용)
+            // 필터링된 공지사항 목록 조회 (프로젝트 기수 필터링은 PHP 레벨에서 처리)
             $query = DB::table($tableName)
                 ->select('id', 'title', 'custom_fields', 'created_at')
                 ->whereNull('deleted_at');
-
-            // 프로젝트 관련 정보 필터링
-            if ($memberProjectInfo['project_term_id']) {
-                $query->where(function($q) use ($memberProjectInfo) {
-                    $projectTermId = $memberProjectInfo['project_term_id'];
-                    $projectTermIdStr = (string)$projectTermId;
-                    
-                    $q->where(function($subQ) use ($projectTermId, $projectTermIdStr) {
-                        $subQ->whereRaw("JSON_EXTRACT(custom_fields, '$.project_term') LIKE ?", ['%"project_term_id":' . $projectTermId . '%'])
-                            ->orWhereRaw("JSON_EXTRACT(custom_fields, '$.project_term') LIKE ?", ['%"project_term_id":"' . $projectTermIdStr . '"%'])
-                            ->orWhereRaw("JSON_EXTRACT(JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.project_term')), '$.project_term_id') = ?", [$projectTermId])
-                            ->orWhereRaw("JSON_EXTRACT(JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.project_term')), '$.project_term_id') = ?", [$projectTermIdStr])
-                            ->orWhereRaw("custom_fields LIKE ?", ['%"project_term_id":' . $projectTermId . '%'])
-                            ->orWhereRaw("custom_fields LIKE ?", ['%"project_term_id":"' . $projectTermIdStr . '"%']);
-                    });
-                });
-            }
 
             $notices = $query->orderBy('created_at', 'desc')
                 ->orderBy('id', 'desc')
                 ->get();
 
-            // PHP 레벨 필터링
-            $filteredNotices = $notices->filter(function ($notice) use ($memberProjectInfo) {
+            // PHP 레벨 필터링: students 필드의 student_ids에 체크된 학생만 표시
+            $filteredNotices = $notices->filter(function ($notice) use ($memberProjectInfo, $memberId) {
                 $customFields = json_decode($notice->custom_fields ?? '{}', true);
                 
                 if (!is_array($customFields)) {
                     return false;
                 }
                 
+                // students 필드 확인
+                if (isset($customFields['students'])) {
+                    $studentsData = is_string($customFields['students']) 
+                        ? json_decode($customFields['students'], true) 
+                        : $customFields['students'];
+                    
+                    if (is_array($studentsData) && isset($studentsData['student_ids'])) {
+                        $studentIds = is_array($studentsData['student_ids']) ? $studentsData['student_ids'] : [];
+                        
+                        // student_ids가 비어있으면 제외
+                        if (empty($studentIds)) {
+                            return false;
+                        }
+                        
+                        // memberId가 student_ids에 포함되면 통과
+                        if ($memberId && in_array((int)$memberId, array_map('intval', $studentIds))) {
+                            return true;
+                        }
+                        
+                        // 포함되지 않으면 제외
+                        return false;
+                    }
+                }
+                
+                // students 필드가 없으면 프로젝트 기수 조건 확인
                 if (isset($customFields['project_term']) && is_string($customFields['project_term'])) {
                     $projectTermParsed = json_decode($customFields['project_term'], true);
                     if (is_array($projectTermParsed)) {
