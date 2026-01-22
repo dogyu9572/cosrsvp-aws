@@ -13,6 +13,7 @@ use App\Models\Schedule;
 use App\Models\Alert;
 use App\Services\ExchangeRateService;
 use App\Services\WeatherService;
+use App\Services\NaverNewsService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -21,11 +22,13 @@ class HomeController extends Controller
 {
     protected $exchangeRateService;
     protected $weatherService;
+    protected $newsService;
 
-    public function __construct(ExchangeRateService $exchangeRateService, WeatherService $weatherService)
+    public function __construct(ExchangeRateService $exchangeRateService, WeatherService $weatherService, NaverNewsService $newsService)
     {
         $this->exchangeRateService = $exchangeRateService;
         $this->weatherService = $weatherService;
+        $this->newsService = $newsService;
     }
 
     public function index()
@@ -55,14 +58,14 @@ class HomeController extends Controller
         // top-notices 게시판 최신글 1개 (띠공지) - 프로젝트 필터링 적용
         $topNotice = $this->getLatestPostsWithFilter('top-notices', 1, $memberProjectInfo)->first();
         
-        // notices 게시판 최신글 3개 - 프로젝트 필터링 적용
-        $noticePosts = $this->getLatestPostsWithFilter('notices', 3, $memberProjectInfo);
+        // notices 게시판 최신글 3개 - 프로젝트 필터링 적용 (학생 체크 포함)
+        $memberId = $member['id'] ?? null;
+        $noticePosts = $this->getLatestPostsWithFilter('notices', 3, $memberProjectInfo, $memberId);
         
         // 스케줄 데이터 조회
         $schedules = $this->getSchedulesByProjectTerm($memberProjectInfo);
         
         // 로그인한 회원의 전체 정보 조회 (입출국 정보 포함)
-        $memberId = $member['id'] ?? null;
         $memberModel = null;
         $memberDocuments = collect();
         $countryDocument = null;
@@ -93,18 +96,22 @@ class HomeController extends Controller
             $submissionDeadline = $memberDocument ? $memberDocument->submission_deadline : ($countryDocument ? $countryDocument->submission_deadline : null);
         }
         
-        // 회원의 국가에 해당하는 일정 조회
+        // 회원의 국가에 해당하는 일정 조회 (최대 5개)
         $stepSchedules = collect();
         if ($memberModel && $memberModel->country_id) {
             $stepSchedules = Schedule::where('country_id', $memberModel->country_id)
                 ->where('is_active', true)
                 ->orderBy('display_order')
+                ->take(5)
                 ->get()
                 ->map(function($schedule) {
-                    $today = now();
-                    $isCurrent = $schedule->start_date && $schedule->end_date 
-                        && $today >= $schedule->start_date 
-                        && $today <= $schedule->end_date;
+                    $today = Carbon::today(); // 날짜만 비교 (시간 제외)
+                    $startDate = $schedule->start_date ? Carbon::parse($schedule->start_date)->startOfDay() : null;
+                    $endDate = $schedule->end_date ? Carbon::parse($schedule->end_date)->endOfDay() : null;
+                    
+                    $isCurrent = $startDate && $endDate 
+                        && $today >= $startDate 
+                        && $today <= $endDate;
                     
                     return (object) [
                         'id' => $schedule->id,
@@ -113,7 +120,7 @@ class HomeController extends Controller
                         'start_date' => $schedule->start_date,
                         'end_date' => $schedule->end_date,
                         'is_current' => $isCurrent,
-                        'is_completed' => $schedule->end_date && $today > $schedule->end_date,
+                        'is_completed' => $endDate && $today > $endDate,
                     ];
                 });
         }
@@ -136,7 +143,10 @@ class HomeController extends Controller
             ->ordered()
             ->get();
         
-        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners', 'schedules', 'memberDocuments', 'memberId', 'memberModel', 'countryDocument', 'memberDocument', 'documentName', 'submissionDeadline', 'stepSchedules'));
+        // 뉴스 데이터 조회 (카테고리별)
+        $newsByCategory = $this->getNewsByCategory();
+        
+        return view('home.index', compact('gNum', 'gName', 'sName', 'galleryPosts', 'topNotice', 'noticePosts', 'popups', 'banners', 'schedules', 'memberDocuments', 'memberId', 'memberModel', 'countryDocument', 'memberDocument', 'documentName', 'submissionDeadline', 'stepSchedules', 'newsByCategory'));
     }
     
     /**
@@ -182,9 +192,9 @@ class HomeController extends Controller
 
     /**
      * 프로젝트 필터링을 적용하여 특정 게시판의 최신글을 가져옵니다.
-     * 기수, 과정, 운영기관, 프로젝트기간, 국가 전부 일치하는 값만 가져옵니다.
+     * students 필드가 있으면 학생 체크만 확인, 없으면 프로젝트 기수 조건 확인.
      */
-    private function getLatestPostsWithFilter($boardSlug, $limit = 4, $memberProjectInfo = [])
+    private function getLatestPostsWithFilter($boardSlug, $limit = 4, $memberProjectInfo = [], $memberId = null)
     {
         try {
             $board = Board::where('slug', $boardSlug)->first();
@@ -224,13 +234,39 @@ class HomeController extends Controller
             $posts = $query->orderBy('created_at', 'desc')
                 ->get();
 
-            // 필터링 후 추가 검증: PHP 레벨에서 모든 프로젝트 관련 필드가 일치하는 것만 필터링
-            $filteredPosts = $posts->filter(function ($post) use ($memberProjectInfo) {
+            // 필터링 후 추가 검증: students 필드 확인 후 프로젝트 기수 조건 확인
+            $filteredPosts = $posts->filter(function ($post) use ($memberProjectInfo, $memberId) {
                 $customFields = json_decode($post->custom_fields ?? '{}', true);
                 
                 if (!is_array($customFields)) {
                     return false;
                 }
+                
+                // students 필드 확인
+                if (isset($customFields['students'])) {
+                    $studentsData = is_string($customFields['students']) 
+                        ? json_decode($customFields['students'], true) 
+                        : $customFields['students'];
+                    
+                    if (is_array($studentsData) && isset($studentsData['student_ids'])) {
+                        $studentIds = is_array($studentsData['student_ids']) ? $studentsData['student_ids'] : [];
+                        
+                        // student_ids가 비어있으면 표시하지 않음
+                        if (empty($studentIds)) {
+                            return false;
+                        }
+                        
+                        // memberId가 student_ids에 포함되면 표시 (프로젝트 기수 조건 무시)
+                        if ($memberId && in_array((int)$memberId, array_map('intval', $studentIds))) {
+                            return true;
+                        }
+                        
+                        // 포함되지 않으면 표시하지 않음
+                        return false;
+                    }
+                }
+                
+                // students 필드가 없으면 프로젝트 기수 조건 확인
                 
                 // project_term이 JSON 문자열로 저장된 경우 파싱
                 if (isset($customFields['project_term']) && is_string($customFields['project_term'])) {
@@ -534,6 +570,51 @@ class HomeController extends Controller
         } catch (\Exception $e) {
             Log::error("스케줄 데이터 조회 오류: " . $e->getMessage());
             return collect();
+        }
+    }
+
+    /**
+     * 카테고리별 뉴스 데이터 조회
+     */
+    private function getNewsByCategory()
+    {
+        try {
+            // 카테고리별로 뉴스 가져오기
+            $newsByCategory = [
+                'all' => [],
+                'main_news' => [],
+                'lifestyle' => [],
+                'fashion' => [],
+                'entertainment' => []
+            ];
+            
+            // all 카테고리: 모든 뉴스 가져오기
+            $allNews = $this->newsService->getTrendingNews(null, 10, 5);
+            $newsByCategory['all'] = array_slice($allNews, 0, 3);
+            
+            // 각 카테고리별로 별도 호출
+            $mainNews = $this->newsService->getTrendingNews('main_news', 10, 5);
+            $newsByCategory['main_news'] = array_slice($mainNews, 0, 3);
+            
+            $lifestyleNews = $this->newsService->getTrendingNews('lifestyle', 10, 5);
+            $newsByCategory['lifestyle'] = array_slice($lifestyleNews, 0, 3);
+            
+            $fashionNews = $this->newsService->getTrendingNews('fashion', 10, 5);
+            $newsByCategory['fashion'] = array_slice($fashionNews, 0, 3);
+            
+            $entertainmentNews = $this->newsService->getTrendingNews('entertainment', 10, 5);
+            $newsByCategory['entertainment'] = array_slice($entertainmentNews, 0, 3);
+            
+            return $newsByCategory;
+        } catch (\Exception $e) {
+            Log::error("뉴스 데이터 조회 오류: " . $e->getMessage());
+            return [
+                'all' => [],
+                'main_news' => [],
+                'lifestyle' => [],
+                'fashion' => [],
+                'entertainment' => []
+            ];
         }
     }
 

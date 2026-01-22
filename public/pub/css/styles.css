@@ -200,6 +200,7 @@
 	.step_area li.on:before {background:#EF0600;}
 	.step_area li.on i {color:#fff; background:#EF0600;}
 	.step_area li.on i:before {border-color:#EF0600;}
+	.step_area li.chk:before {background:#EF0600;}
 	.step_area li.chk i:before {background:#EF0600 url('/pub/images/icon_chk.svg') no-repeat 50% 50%; z-index:1;}
 	.step_area li.blank:before,
 	.step_area li.blank + li:before {display:none;}

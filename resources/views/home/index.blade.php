@@ -18,7 +18,7 @@
 			<div class="itit ico_sch">Schedule</div>
 			<ol class="step_area">
 				@forelse($stepSchedules ?? [] as $schedule)
-					<li class="{{ $schedule->is_current ? 'on' : '' }} {{ $schedule->is_completed ? 'chk' : '' }}">
+					<li class="{{ $schedule->is_current ? 'on' : ($schedule->is_completed ? 'chk' : '') }}">
 						<i>{{ $schedule->step_number }}</i>
 						@if($schedule->step_number == 1)
 							<span></span>STEP {{ $schedule->step_number }}
