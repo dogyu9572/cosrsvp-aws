@@ -11,9 +11,21 @@ const state = {
     currentCategoryId: null
 };
 
+// 날짜 포맷 함수 (YYYY-MM-DD 형식으로 표시)
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
     loadReferenceMaterials();
+    // 서버에서 이미 모든 데이터를 렌더링하므로 초기화 함수는 불필요
 });
 
 // 이벤트 리스너 초기화
@@ -639,9 +651,24 @@ function loadSchedules(countryId) {
                                 div.setAttribute('data-schedule-id', schedule.id);
                                 div.setAttribute('data-country-id', countryId);
                                 div.style.marginBottom = '0.25rem';
+                                
+                                // 날짜 정보 포맷팅
+                                let dateInfo = '';
+                                if (schedule.start_date || schedule.end_date) {
+                                    const startDate = schedule.start_date ? formatDate(schedule.start_date) : '';
+                                    const endDate = schedule.end_date ? formatDate(schedule.end_date) : '';
+                                    if (startDate && endDate) {
+                                        dateInfo = ` <span style="color: #6c757d; font-size: 0.875rem;">(${startDate} ~ ${endDate})</span>`;
+                                    } else if (startDate) {
+                                        dateInfo = ` <span style="color: #6c757d; font-size: 0.875rem;">(${startDate})</span>`;
+                                    } else if (endDate) {
+                                        dateInfo = ` <span style="color: #6c757d; font-size: 0.875rem;">(~ ${endDate})</span>`;
+                                    }
+                                }
+                                
                                 div.innerHTML = `
                                     <a href="#" class="schedule-link" data-schedule-id="${schedule.id}" style="color: #333; text-decoration: none;">
-                                        ${schedule.name_ko || ''}${schedule.name_en ? ' / ' + schedule.name_en : ''}
+                                        ${schedule.name_ko || ''}${schedule.name_en ? ' / ' + schedule.name_en : ''}${dateInfo}
                                     </a>
                                 `;
                                 cell.appendChild(div);

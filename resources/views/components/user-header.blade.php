@@ -24,7 +24,7 @@
 				<div class="menu gnb3 {{ ($gNum ?? '') == '03' ? 'on' : '' }}"><a href="{{ route('map') }}">Map</a></div>
 				<div class="menu gnb4 {{ ($gNum ?? '') == '04' ? 'on' : '' }}"><a href="{{ route('notices') }}">Notice</a></div>
 				<div class="menu gnb5 {{ ($gNum ?? '') == '05' ? 'on' : '' }}"><a href="{{ route('gallery') }}">Gallery</a></div>
-				<div class="menu gnb6 {{ ($gNum ?? '') == '06' ? 'on' : '' }}"><a href="{{ route('home') }}">Latest News</a></div>
+				<div class="menu gnb6 {{ ($gNum ?? '') == '06' ? 'on' : '' }}"><a href="{{ route('news') }}">Latest News</a></div>
 				<div class="menu gnb7 {{ ($gNum ?? '') == '07' ? 'on' : '' }}"><a href="{{ route('inquiries') }}">Contact Us<i></i></a>
 					<div class="snb">
 						<a href="{{ route('inquiries') }}" class="{{ (($gNum ?? '') == '07' && ($sNum ?? '') == '01') ? 'on' : '' }}">Contact Us</a>

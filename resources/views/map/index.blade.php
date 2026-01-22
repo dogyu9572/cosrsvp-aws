@@ -14,7 +14,7 @@ $gName = $gName ?? "Accommodation and surrounding areas";
         
         <div class="google_map map-wrap">
             <div>
-                <input id="pac-input" type="text" placeholder="장소 검색">
+                <input id="pac-input" type="text" placeholder="Search places">
                 <div class="place-info" id="place-info" style="display:none;">
                     <div class="thumb" id="place-thumb"></div>
                     <div class="name" id="place-name"></div>
@@ -33,7 +33,7 @@ $gName = $gName ?? "Accommodation and surrounding areas";
 @php
 $apiKey = config('services.google.maps_api_key');
 @endphp
-<script src="https://maps.googleapis.com/maps/api/js?key={{ $apiKey }}&libraries=places&language=ko"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ $apiKey }}&libraries=places&language=en"></script>
 <script src="/js/common/google-maps.js"></script>
 @endpush
 

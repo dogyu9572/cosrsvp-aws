@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\NoticeController;
+use App\Http\Controllers\NewsController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\InquiryController;
@@ -43,6 +44,10 @@ Route::get('/map', [MapController::class, 'index'])->name('map');
 // 공지사항 페이지
 Route::get('/notices', [NoticeController::class, 'index'])->name('notices');
 Route::get('/notices/{id}', [NoticeController::class, 'show'])->name('notices.show');
+
+// 뉴스 페이지
+Route::get('/news', [NewsController::class, 'index'])->name('news');
+Route::get('/news/{id}', [NewsController::class, 'show'])->name('news.show');
 
 // 갤러리 페이지
 Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery');

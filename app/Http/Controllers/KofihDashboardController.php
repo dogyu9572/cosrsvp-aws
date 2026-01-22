@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\OperatingInstitution;
 use App\Models\ProjectPeriod;
 use App\Models\Country;
+use App\Models\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -318,6 +319,7 @@ class KofihDashboardController extends Controller
     
     /**
      * 진행률 계산
+     * schedules 테이블의 start_date, end_date를 기준으로 완료된 일정 수를 계산
      */
     private function getProgressRate(array $projectInfo)
     {
@@ -333,8 +335,17 @@ class KofihDashboardController extends Controller
             $totalCount = $schedules->count();
             
             foreach ($schedules as $schedule) {
-                if ($schedule->end_date && Carbon::parse($schedule->end_date)->isPast()) {
-                    $completedCount++;
+                // end_date가 있고, 오늘 날짜보다 과거인 경우 완료로 간주
+                if (!empty($schedule->end_date)) {
+                    try {
+                        $endDate = Carbon::parse($schedule->end_date);
+                        if ($endDate->isPast() || $endDate->isToday()) {
+                            $completedCount++;
+                        }
+                    } catch (\Exception $e) {
+                        // 날짜 파싱 오류 시 해당 일정은 제외
+                        Log::warning("일정 날짜 파싱 오류 (ID: {$schedule->id}): " . $e->getMessage());
+                    }
                 }
             }
             
@@ -352,118 +363,40 @@ class KofihDashboardController extends Controller
     private function getStepSchedules(array $projectInfo)
     {
         try {
-            $tableName = 'board_schedules';
+            // Country 모델을 통해 프로젝트 정보 검증 및 schedules 조회
+            $country = Country::where('id', $projectInfo['country_id'])
+                ->whereHas('projectPeriod', function($q) use ($projectInfo) {
+                    $q->where('id', $projectInfo['project_period_id'])
+                      ->whereHas('operatingInstitution', function($q) use ($projectInfo) {
+                          $q->where('id', $projectInfo['operating_institution_id'])
+                            ->whereHas('course', function($q) use ($projectInfo) {
+                                $q->where('id', $projectInfo['course_id'])
+                                  ->where('project_term_id', $projectInfo['project_term_id']);
+                            });
+                      });
+                })
+                ->first();
             
-            if (!DB::getSchemaBuilder()->hasTable($tableName)) {
+            if (!$country) {
                 return collect();
             }
             
-            $query = DB::table($tableName)
-                ->select('id', 'title', 'content', 'custom_fields', 'created_at')
-                ->whereNull('deleted_at');
+            // 해당 Country의 활성화된 일정 조회
+            $schedules = Schedule::where('country_id', $country->id)
+                ->active()
+                ->orderBy('display_order')
+                ->get();
             
-            // 프로젝트 정보로 필터링
-            $projectTermId = $projectInfo['project_term_id'];
-            $courseId = $projectInfo['course_id'];
-            $operatingInstitutionId = $projectInfo['operating_institution_id'];
-            $projectPeriodId = $projectInfo['project_period_id'];
-            $countryId = $projectInfo['country_id'];
-            
-            // custom_fields에서 프로젝트 정보 필터링
-            $schedules = $query->get()->filter(function ($schedule) use ($projectTermId, $courseId, $operatingInstitutionId, $projectPeriodId, $countryId) {
-                $customFields = json_decode($schedule->custom_fields ?? '{}', true);
-                
-                if (!is_array($customFields)) {
-                    return false;
-                }
-                
-                // project_term이 JSON 문자열로 저장된 경우 파싱
-                if (isset($customFields['project_term']) && is_string($customFields['project_term'])) {
-                    $projectTermParsed = json_decode($customFields['project_term'], true);
-                    if (is_array($projectTermParsed)) {
-                        $customFields['project_term'] = $projectTermParsed;
-                    }
-                }
-                
-                // project_term 데이터 추출
-                $scheduleProjectInfo = [];
-                if (isset($customFields['project_term'])) {
-                    $projectTermData = $customFields['project_term'];
-                    if (is_string($projectTermData)) {
-                        $projectTermData = json_decode($projectTermData, true);
-                    }
-                    if (is_array($projectTermData)) {
-                        $scheduleProjectInfo = [
-                            'project_term_id' => $projectTermData['project_term_id'] ?? null,
-                            'course_id' => $projectTermData['course_id'] ?? null,
-                            'operating_institution_id' => $projectTermData['operating_institution_id'] ?? null,
-                            'project_period_id' => $projectTermData['project_period_id'] ?? null,
-                            'country_id' => $projectTermData['country_id'] ?? null,
-                        ];
-                    }
-                }
-                
-                // 모든 필드가 일치하는지 확인
-                return ($scheduleProjectInfo['project_term_id'] == $projectTermId) &&
-                       ($scheduleProjectInfo['course_id'] == $courseId) &&
-                       ($scheduleProjectInfo['operating_institution_id'] == $operatingInstitutionId) &&
-                       ($scheduleProjectInfo['project_period_id'] == $projectPeriodId) &&
-                       ($scheduleProjectInfo['country_id'] == $countryId);
-            });
-            
-            // 날짜 정보 추출 및 정렬
             return $schedules->map(function ($schedule) {
-                $customFields = json_decode($schedule->custom_fields ?? '{}', true);
-                
-                if (!is_array($customFields)) {
-                    $customFields = [];
-                }
-                
-                // project_term이 JSON 문자열로 저장된 경우 파싱
-                if (isset($customFields['project_term']) && is_string($customFields['project_term'])) {
-                    $projectTermParsed = json_decode($customFields['project_term'], true);
-                    if (is_array($projectTermParsed)) {
-                        $customFields['project_term'] = $projectTermParsed;
-                    }
-                }
-                
-                // 날짜 범위 추출
-                $displayDateField = $customFields['display_date_range'] ?? $customFields['display_date'] ?? null;
-                $startDate = null;
-                $endDate = null;
-                
-                if ($displayDateField) {
-                    if (is_string($displayDateField)) {
-                        $decoded = json_decode($displayDateField, true);
-                        if (is_array($decoded)) {
-                            $displayDateField = $decoded;
-                        }
-                    }
-                    
-                    if (is_array($displayDateField)) {
-                        $useDisplayDate = $displayDateField['use_display_date'] ?? true;
-                        
-                        if ($useDisplayDate) {
-                            $startDate = $displayDateField['start_date'] ?? null;
-                            $endDate = $displayDateField['end_date'] ?? null;
-                        }
-                    }
-                }
-                
-                // display_order 추출 (없으면 created_at 기준)
-                $displayOrder = $customFields['display_order'] ?? null;
-                
                 return (object) [
                     'id' => $schedule->id,
-                    'title' => $schedule->title,
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
-                    'display_order' => $displayOrder ?? 999,
+                    'title' => $schedule->name_ko ?? $schedule->name_en,
+                    'start_date' => $schedule->start_date?->format('Y-m-d'),
+                    'end_date' => $schedule->end_date?->format('Y-m-d'),
+                    'display_order' => $schedule->display_order ?? 999,
                     'created_at' => $schedule->created_at,
                 ];
-            })
-            ->sortBy('display_order')
-            ->values();
+            });
             
         } catch (\Exception $e) {
             Log::error("단계별 일정 조회 오류: " . $e->getMessage());

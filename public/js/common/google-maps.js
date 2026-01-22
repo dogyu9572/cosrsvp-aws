@@ -52,7 +52,7 @@
             const place = autocomplete.getPlace();
             
             if (!place.geometry) {
-                console.error('장소 정보를 찾을 수 없습니다.');
+                console.error('Place information not found.');
                 return;
             }
 
@@ -132,11 +132,11 @@
                     marker.setVisible(true);
 
                     // 현위치 정보창 표시
-                    infoWindow.setContent('현재 위치');
+                    infoWindow.setContent('Current Location');
                     infoWindow.open(map, marker);
                 },
                 function(error) {
-                    console.error('위치 정보를 가져올 수 없습니다:', error);
+                    console.error('Unable to retrieve location information:', error);
                 }
             );
         }

@@ -83,9 +83,6 @@ $gName = '회원';
 							</dd>
 						</dl>
 					</div>
-					<div class="btns_search_area flex_center btns_abso">
-						<button type="submit" class="btn btn_search">검색</button>
-					</div>
 				</form>
 				<div class="info">
 					<dl class="i1">
@@ -138,66 +135,16 @@ $gName = '회원';
 						<ul class="step_area">
 							@php
 								$today = \Carbon\Carbon::today();
-								$stepIndex = 0;
-								$maxDisplay = 3; // 최대 3개 단계 표시
+								$maxDisplay = 5; // 최대 5개 일정 표시
 								$totalSteps = $group->step_schedules->count();
 								$displayedSteps = [];
-								$blankBefore = false;
-								$blankAfter = false;
 								
-								// 현재 진행 중인 단계 찾기
-								$currentStepIndex = -1;
-								foreach ($group->step_schedules as $index => $step) {
-									if ($step->start_date && $step->end_date) {
-										$startDate = \Carbon\Carbon::parse($step->start_date);
-										$endDate = \Carbon\Carbon::parse($step->end_date);
-										if ($today >= $startDate && $today <= $endDate) {
-											$currentStepIndex = $index;
-											break;
-										}
-									}
-								}
-								
-								// 표시할 단계 선택
-								if ($currentStepIndex >= 0) {
-									// 현재 진행 중인 단계 중심으로 표시
-									$startIndex = max(0, $currentStepIndex - 1);
-									$endIndex = min($totalSteps - 1, $currentStepIndex + 1);
-									$blankBefore = $startIndex > 0;
-									$blankAfter = $endIndex < $totalSteps - 1;
-								} else {
-									// 진행 중인 단계가 없으면 최근 완료된 단계나 첫 번째 단계 중심
-									$lastCompletedIndex = -1;
-									foreach ($group->step_schedules as $index => $step) {
-										if ($step->end_date && \Carbon\Carbon::parse($step->end_date)->isPast()) {
-											$lastCompletedIndex = $index;
-										}
-									}
-									if ($lastCompletedIndex >= 0) {
-										$startIndex = max(0, $lastCompletedIndex);
-										$endIndex = min($totalSteps - 1, $lastCompletedIndex + 2);
-									} else {
-										$startIndex = 0;
-										$endIndex = min($maxDisplay - 1, $totalSteps - 1);
-									}
-									$blankBefore = $startIndex > 0;
-									$blankAfter = $endIndex < $totalSteps - 1;
-								}
-								
-								$displayRange = $endIndex - $startIndex + 1;
-								if ($displayRange > $maxDisplay) {
-									$endIndex = $startIndex + $maxDisplay - 1;
-									$blankAfter = true;
-								}
-								
-								for ($i = $startIndex; $i <= $endIndex && $i < $totalSteps; $i++) {
+								// 최대 5개까지 일정 표시
+								$displayCount = min($maxDisplay, $totalSteps);
+								for ($i = 0; $i < $displayCount; $i++) {
 									$displayedSteps[] = $i;
 								}
 							@endphp
-							
-							@if($blankBefore)
-								<li class="blank"></li>
-							@endif
 							
 							@foreach($displayedSteps as $displayIndex => $scheduleIndex)
 								@php
@@ -231,7 +178,7 @@ $gName = '회원';
 								</li>
 							@endforeach
 							
-							@if($blankAfter)
+							@if($totalSteps > $maxDisplay)
 								<li class="blank"></li>
 							@endif
 						</ul>
@@ -263,7 +210,7 @@ $(document).ready(function() {
 		});
 	});
 	
-	// Cascading dropdown 구현 (일정 페이지와 동일)
+	// Cascading dropdown 구현 및 자동 검색
 	$('#project_term_id').on('change', function() {
 		const projectTermId = $(this).val();
 		const $courseSelect = $('#course_id');
@@ -272,6 +219,7 @@ $(document).ready(function() {
 		
 		if (!projectTermId) {
 			$courseSelect.html('<option value="">전체</option>');
+			$('#dashboardFilterForm').submit();
 			return;
 		}
 		
@@ -285,9 +233,11 @@ $(document).ready(function() {
 					$courseSelect.append('<option value="' + course.id + '">' + (course.name_ko || course.name_en) + '</option>');
 				});
 			}
+			$('#dashboardFilterForm').submit();
 		})
 		.fail(function() {
 			$courseSelect.html('<option value="">전체</option>');
+			$('#dashboardFilterForm').submit();
 		});
 	});
 	
@@ -299,6 +249,7 @@ $(document).ready(function() {
 		
 		if (!courseId) {
 			$institutionSelect.html('<option value="">전체</option>');
+			$('#dashboardFilterForm').submit();
 			return;
 		}
 		
@@ -312,9 +263,11 @@ $(document).ready(function() {
 					$institutionSelect.append('<option value="' + institution.id + '">' + (institution.name_ko || institution.name_en) + '</option>');
 				});
 			}
+			$('#dashboardFilterForm').submit();
 		})
 		.fail(function() {
 			$institutionSelect.html('<option value="">전체</option>');
+			$('#dashboardFilterForm').submit();
 		});
 	});
 	
@@ -326,6 +279,7 @@ $(document).ready(function() {
 		
 		if (!institutionId) {
 			$periodSelect.html('<option value="">전체</option>');
+			$('#dashboardFilterForm').submit();
 			return;
 		}
 		
@@ -339,9 +293,11 @@ $(document).ready(function() {
 					$periodSelect.append('<option value="' + period.id + '">' + (period.name_ko || period.name_en) + '</option>');
 				});
 			}
+			$('#dashboardFilterForm').submit();
 		})
 		.fail(function() {
 			$periodSelect.html('<option value="">전체</option>');
+			$('#dashboardFilterForm').submit();
 		});
 	});
 	
@@ -351,6 +307,7 @@ $(document).ready(function() {
 		
 		if (!periodId) {
 			$countrySelect.html('<option value="">전체</option>');
+			$('#dashboardFilterForm').submit();
 			return;
 		}
 		
@@ -364,10 +321,17 @@ $(document).ready(function() {
 					$countrySelect.append('<option value="' + country.id + '">' + (country.name_ko || country.name) + '</option>');
 				});
 			}
+			$('#dashboardFilterForm').submit();
 		})
 		.fail(function() {
 			$countrySelect.html('<option value="">전체</option>');
+			$('#dashboardFilterForm').submit();
 		});
+	});
+	
+	// 국가 선택 시에도 자동 검색
+	$('#country_id').on('change', function() {
+		$('#dashboardFilterForm').submit();
 	});
 });
 </script>

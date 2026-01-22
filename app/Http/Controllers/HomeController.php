@@ -240,6 +240,56 @@ class HomeController extends Controller
                     }
                 }
                 
+                // 표출일정 체크
+                $displayDateField = $customFields['display_date_range'] ?? $customFields['display_date'] ?? null;
+                if ($displayDateField) {
+                    // display_date가 JSON 문자열로 저장된 경우 파싱
+                    if (is_string($displayDateField)) {
+                        $decoded = json_decode($displayDateField, true);
+                        if (is_array($decoded)) {
+                            $displayDateField = $decoded;
+                        }
+                    }
+                    
+                    if (is_array($displayDateField)) {
+                        $useDisplayDate = $displayDateField['use_display_date'] ?? false;
+                        
+                        // use_display_date가 true인 경우에만 표출일정 체크
+                        if ($useDisplayDate) {
+                            $startDate = $displayDateField['start_date'] ?? null;
+                            $endDate = $displayDateField['end_date'] ?? null;
+                            
+                            if ($startDate || $endDate) {
+                                $today = Carbon::now()->startOfDay();
+                                
+                                // 시작일이 있고 오늘보다 미래면 제외
+                                if ($startDate) {
+                                    try {
+                                        $start = Carbon::parse($startDate)->startOfDay();
+                                        if ($today->lt($start)) {
+                                            return false;
+                                        }
+                                    } catch (\Exception $e) {
+                                        Log::error("표출일정 시작일 파싱 오류 (ID: {$post->id}): " . $e->getMessage());
+                                    }
+                                }
+                                
+                                // 종료일이 있고 오늘보다 과거면 제외
+                                if ($endDate) {
+                                    try {
+                                        $end = Carbon::parse($endDate)->endOfDay();
+                                        if ($today->gt($end)) {
+                                            return false;
+                                        }
+                                    } catch (\Exception $e) {
+                                        Log::error("표출일정 종료일 파싱 오류 (ID: {$post->id}): " . $e->getMessage());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 // project_term 데이터 추출
                 $postProjectInfo = [];
                 if (isset($customFields['project_term'])) {

@@ -39,4 +39,15 @@ return [
         'maps_api_key' => env('GOOGLE_MAPS_API_KEY', 'AIzaSyBKEWjRHQc94digJJxJchyJ0OePUOG5bv8'),
     ],
 
+    'naver' => [
+        'datalab' => [
+            'client_id' => env('NAVER_DATALAB_CLIENT_ID', 'ZWYHMfJXejmObnDNdmpc'),
+            'client_secret' => env('NAVER_DATALAB_CLIENT_SECRET', 'D3DnudR_1z'),
+        ],
+        'search' => [
+            'client_id' => env('NAVER_SEARCH_CLIENT_ID', '1KZA6knlqfELzLlYvKwB'),
+            'client_secret' => env('NAVER_SEARCH_CLIENT_SECRET', 'sWG7uHXcvH'),
+        ],
+    ],
+
 ];

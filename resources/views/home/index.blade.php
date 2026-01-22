@@ -5,14 +5,14 @@
 	@include('components.user-header')
 	<div class="contents">
 	
-		@if(isset($topNotice) && $topNotice)
 		<div class="dashboard_notice">
 			<div class="tit">Notice</div>
 			<div class="con">
+				@if(isset($topNotice) && $topNotice && !empty($topNotice->content))
 				<a href="#this">{{ $topNotice->content }}</a>
+				@endif
 			</div>
 		</div>
-		@endif
 		
 		<div class="wbox">
 			<div class="itit ico_sch">Schedule</div>
@@ -198,7 +198,7 @@
 				@endif
 			</div>
 				<div class="wbox w100p">
-					<div class="itit ico_notice">Latest News <a href="{{ route('home') }}" class="more">View More</a></div>
+					<div class="itit ico_notice">Latest News <a href="{{ route('news') }}" class="more">View More</a></div>
 					<div class="jq_tabonoff dash_board_wrap">
 						<ul class="jq_tab tabs">
 							<li><button type="button">All</button></li>
@@ -208,146 +208,46 @@
 							<li><button type="button">Entertainment</button></li>
 						</ul>
 						<div class="jq_cont">
+							@php
+								$categories = ['all', 'main_news', 'lifestyle', 'fashion', 'entertainment'];
+								$categoryLabels = [
+									'all' => 'All',
+									'main_news' => 'Main News',
+									'lifestyle' => 'Lifestyle',
+									'fashion' => 'Fashion',
+									'entertainment' => 'Entertainment'
+								];
+							@endphp
+							@foreach($categories as $category)
 							<div class="cont">
 								<ul class="dash_board">
-									<li>
-										<a href="#this">
-											<span class="type">Main News</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Lifestyle</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Fashion</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
+									@forelse($newsByCategory[$category] ?? [] as $item)
+										@php
+											$categoryLabel = $categoryLabels[$item['category'] ?? 'all'] ?? 'All';
+											$dateParts = explode('-', $item['date'] ?? '');
+											$year = $dateParts[0] ?? date('Y');
+											$month = $dateParts[1] ?? date('m');
+											$day = $dateParts[2] ?? date('d');
+											$link = $item['originallink'] ?? $item['link'] ?? '#';
+										@endphp
+										<li>
+											<a href="{{ $link }}" target="_blank" rel="noopener noreferrer">
+												<span class="type">{{ $categoryLabel }}</span>
+												<strong>{{ $item['title'] ?? '' }}</strong>
+												<p class="con mo_vw">{{ $item['description'] ?? '' }}</p>
+												<p class="date">{{ $year }}.{{ $month }}<i class="pc_vw">.</i><b>{{ $day }}</b></p>
+											</a>
+										</li>
+									@empty
+										<li>
+											<div style="padding: 20px; text-align: center; color: #999;">
+												등록된 뉴스가 없습니다.
+											</div>
+										</li>
+									@endforelse
 								</ul>
 							</div>
-							<div class="cont">
-								<ul class="dash_board">
-									<li>
-										<a href="#this">
-											<span class="type">Main News</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Main News</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Main News</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-								</ul>
-							</div>
-							<div class="cont">
-								<ul class="dash_board">
-									<li>
-										<a href="#this">
-											<span class="type">Lifestyle</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Lifestyle</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Lifestyle</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-								</ul>
-							</div>
-							<div class="cont">
-								<ul class="dash_board">
-									<li>
-										<a href="#this">
-											<span class="type">Fashion</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Fashion</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Fashion</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-								</ul>
-							</div>
-							<div class="cont">
-								<ul class="dash_board">
-									<li>
-										<a href="#this">
-											<span class="type">Entertainment</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Entertainment</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-									<li>
-										<a href="#this">
-											<span class="type">Entertainment</span>
-											<strong>제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.제목입니다.</strong>
-											<p class="con mo_vw">내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.내용입니다.</p>
-											<p class="date">2025.01<i class="pc_vw">.</i><b>01</b></p>
-										</a>
-									</li>
-								</ul>
-							</div>
+							@endforeach
 						</div>
 					</div>
 				</div>

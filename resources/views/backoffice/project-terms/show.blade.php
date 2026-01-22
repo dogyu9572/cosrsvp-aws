@@ -214,12 +214,65 @@
                                             </div>
                                         </td>
                                         <td class="operating-institution-cell" data-course-id="{{ $course->id }}">
+                                            @foreach($course->operatingInstitutions as $institution)
+                                                <div class="institution-item" data-institution-id="{{ $institution->id }}" data-course-id="{{ $course->id }}" style="margin-bottom: 0rem;">
+                                                    <a href="#" class="institution-link" data-institution-id="{{ $institution->id }}" style="color: #333; text-decoration: none;">
+                                                        {{ $institution->name_ko ?? '' }}{{ $institution->name_en ? ' / ' . $institution->name_en : '' }}
+                                                    </a>
+                                                </div>
+                                            @endforeach
                                         </td>
                                         <td class="project-period-cell">
+                                            @foreach($course->operatingInstitutions as $institution)
+                                                @foreach($institution->projectPeriods as $period)
+                                                    <div class="period-item" data-period-id="{{ $period->id }}" data-institution-id="{{ $institution->id }}" style="margin-bottom: 0.25rem;">
+                                                        <a href="#" class="period-link" data-period-id="{{ $period->id }}" style="color: #333; text-decoration: none;">
+                                                            {{ $period->name_ko ?? '' }}{{ $period->name_en ? ' / ' . $period->name_en : '' }}
+                                                        </a>
+                                                    </div>
+                                                @endforeach
+                                            @endforeach
                                         </td>
                                         <td class="country-cell">
+                                            @foreach($course->operatingInstitutions as $institution)
+                                                @foreach($institution->projectPeriods as $period)
+                                                    @foreach($period->countries as $country)
+                                                        <div class="country-item" data-country-id="{{ $country->id }}" data-period-id="{{ $period->id }}" style="margin-bottom: 0rem;">
+                                                            <a href="#" class="country-link" data-country-id="{{ $country->id }}" style="color: #333; text-decoration: none;">
+                                                                {{ $country->name_ko ?? '' }}{{ $country->name_en ? ' / ' . $country->name_en : '' }}
+                                                            </a>
+                                                        </div>
+                                                    @endforeach
+                                                @endforeach
+                                            @endforeach
                                         </td>
                                         <td class="schedule-cell">
+                                            @foreach($course->operatingInstitutions as $institution)
+                                                @foreach($institution->projectPeriods as $period)
+                                                    @foreach($period->countries as $country)
+                                                        @foreach($country->schedules as $schedule)
+                                                            <div class="schedule-item" data-schedule-id="{{ $schedule->id }}" data-country-id="{{ $country->id }}" style="margin-bottom: 0.25rem;">
+                                                                <a href="#" class="schedule-link" data-schedule-id="{{ $schedule->id }}" style="color: #333; text-decoration: none;">
+                                                                    {{ $schedule->name_ko ?? '' }}{{ $schedule->name_en ? ' / ' . $schedule->name_en : '' }}
+                                                                    @if($schedule->start_date || $schedule->end_date)
+                                                                        @php
+                                                                            $startDate = $schedule->start_date ? \Carbon\Carbon::parse($schedule->start_date)->format('Y-m-d') : '';
+                                                                            $endDate = $schedule->end_date ? \Carbon\Carbon::parse($schedule->end_date)->format('Y-m-d') : '';
+                                                                        @endphp
+                                                                        @if($startDate && $endDate)
+                                                                            <span style="color: #6c757d; font-size: 0.875rem;"> ({{ $startDate }} ~ {{ $endDate }})</span>
+                                                                        @elseif($startDate)
+                                                                            <span style="color: #6c757d; font-size: 0.875rem;"> ({{ $startDate }})</span>
+                                                                        @elseif($endDate)
+                                                                            <span style="color: #6c757d; font-size: 0.875rem;"> (~ {{ $endDate }})</span>
+                                                                        @endif
+                                                                    @endif
+                                                                </a>
+                                                            </div>
+                                                        @endforeach
+                                                    @endforeach
+                                                @endforeach
+                                            @endforeach
                                         </td>
                                     </tr>
                                 @empty
